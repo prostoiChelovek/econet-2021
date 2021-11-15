@@ -1,0 +1,27 @@
+[package]
+name = "peripheral-controller"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cortex-m = "^0.6.0"
+cortex-m-rt = "^0.6.8"
+cortex-m-semihosting = "0.3.7"
+panic-halt = "0.2.0"
+nb = "1.0.0"
+embedded-hal = "0.2.6"
+
+[dependencies.stm32f1xx-hal]
+version = "0.7.0"
+features = ["stm32f103", "rt", "medium"]
+
+[[bin]]
+name = "peripheral-controller"
+test = false
+bench = false
+
+[profile.release]
+codegen-units = 1
+debug = true
+lto = true
+
