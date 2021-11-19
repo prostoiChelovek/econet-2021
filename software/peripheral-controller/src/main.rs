@@ -1,40 +1,41 @@
-#![deny(unsafe_code)]
-#![no_std]
 #![no_main]
+#![no_std]
 
+// use defmt_rtt as _;
+use cortex_m_rt::entry;
+// use panic_probe as _;
 use panic_halt as _;
 
-use nb::block;
+use nucleo_f401re::{
+    hal::{prelude::*, delay},
+    pac, Button, Led,
+};
 
-use cortex_m_rt::entry;
-use embedded_hal::digital::v2::OutputPin;
-use stm32f1xx_hal::{pac, prelude::*, timer::Timer};
-
-// Определяем входную функцию.
 #[entry]
 fn main() -> ! {
-    // Получаем управление над аппаратными средствами
-    let cp = cortex_m::Peripherals::take().unwrap();
-    let dp = pac::Peripherals::take().unwrap();
-    let mut flash = dp.FLASH.constrain();
-    let mut rcc = dp.RCC.constrain();
+    if let (Some(dp), Some(cp)) = (
+        pac::Peripherals::take(),
+        cortex_m::peripheral::Peripherals::take(),
+    ) {
+        // Set up the LED. On the Mini-F4 it's connected to pin PC13.
+        let gpioa = dp.GPIOA.split();
+        let mut led = gpioa.pa5.into_push_pull_output();
 
-    let clocks = rcc.cfgr.freeze(&mut flash.acr);
-    let mut gpiob = dp.GPIOB.split(&mut rcc.apb2);
+        // Set up the system clock. We want to run at 48MHz for this one.
+        let rcc = dp.RCC.constrain();
+        let clocks = rcc.cfgr.sysclk(48.mhz()).freeze();
 
-    // Конфигурируем пин b12 как двухтактный выход.
-    // Регистр "crh" передаётся в функцию для настройки порта.
-    // Для пинов 0-7, необходимо передавать регистр "crl".
-    let mut led = gpiob.pb12.into_push_pull_output(&mut gpiob.crh);
-    // Конфигурируем системный таймер на запуск обновления каждую секунду.
-    let mut timer = Timer::syst(cp.SYST, &clocks).start_count_down(1.hz());
+        // Create a delay abstraction based on general-pupose 32-bit timer TIM5
+        let mut delay = delay::Delay::new(cp.SYST, clocks);
 
-    // Ждём пока таймер запустит обновление
-    // и изменит состояние светодиода.
-    loop {
-        block!(timer.wait()).unwrap();
-        led.set_high().unwrap();
-        block!(timer.wait()).unwrap();
-        led.set_low().unwrap();
+        loop {
+            // On for 1s, off for 1s.
+            led.set_high();
+            delay.delay_ms(1_000_u32);
+            led.set_low();
+            delay.delay_us(1_000_000_u32);
+        }
     }
+
+    loop {}
 }

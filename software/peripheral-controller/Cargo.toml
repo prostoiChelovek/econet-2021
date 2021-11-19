@@ -10,10 +10,11 @@ cortex-m-semihosting = "0.3.7"
 panic-halt = "0.2.0"
 nb = "1.0.0"
 embedded-hal = "0.2.6"
+nucleo-f401re = "0.4.1"
 
-[dependencies.stm32f1xx-hal]
-version = "0.7.0"
-features = ["stm32f103", "rt", "medium"]
+# defmt = "0.2.0"
+# defmt-rtt = "0.2.0"
+# panic-probe = { version = "0.2.0", features = ["print-defmt"] }
 
 [[bin]]
 name = "peripheral-controller"
