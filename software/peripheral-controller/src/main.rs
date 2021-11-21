@@ -2,8 +2,9 @@
 #![no_std]
 
 use cortex_m_rt::entry;
-use panic_rtt_target as _;
+
 use rtt_target::{rprintln, rtt_init, set_print_channel};
+use panic_probe as _;
 
 use nucleo_f401re::{
     hal::{prelude::*, delay}, pac
