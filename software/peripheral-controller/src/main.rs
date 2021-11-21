@@ -1,18 +1,33 @@
 #![no_main]
 #![no_std]
 
-// use defmt_rtt as _;
 use cortex_m_rt::entry;
-// use panic_probe as _;
-use panic_halt as _;
+use panic_rtt_target as _;
+use rtt_target::{rprintln, rtt_init, set_print_channel};
 
 use nucleo_f401re::{
-    hal::{prelude::*, delay},
-    pac, Button, Led,
+    hal::{prelude::*, delay}, pac
 };
 
 #[entry]
 fn main() -> ! {
+    let channels = 
+        rtt_init! {
+            up: {
+                0: {
+                    size: 1024
+                    name: "Terminal"
+                }
+            }
+            down: {
+                0: {
+                    size: 16
+                    name: "Terminal"
+                }
+            }
+        };
+    set_print_channel(channels.up.0);
+
     if let (Some(dp), Some(cp)) = (
         pac::Peripherals::take(),
         cortex_m::peripheral::Peripherals::take(),
@@ -31,8 +46,10 @@ fn main() -> ! {
         loop {
             // On for 1s, off for 1s.
             led.set_high();
+            rprintln!("ON");
             delay.delay_ms(1_000_u32);
             led.set_low();
+            rprintln!("OFF");
             delay.delay_us(1_000_000_u32);
         }
     }

@@ -12,6 +12,8 @@ nb = "1.0.0"
 embedded-hal = "0.2.6"
 nucleo-f401re = "0.4.1"
 
+rtt-target = { version = "0.3.1", features = ["cortex-m"] }
+panic-rtt-target = { version = "0.1.2", features = ["cortex-m"] }
 # defmt = "0.2.0"
 # defmt-rtt = "0.2.0"
 # panic-probe = { version = "0.2.0", features = ["print-defmt"] }
