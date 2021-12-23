@@ -53,7 +53,7 @@ try:
             print(f"Saved {filename}")
             paper_number += 1
         elif i == ord('t'):
-            filename = 'tin/tinb{}.jpg'.format(tin_number)
+            filename = 'tin/tin{}.jpg'.format(tin_number)
             cv.imwrite(filename, img)
             print(f"Saved {filename}")
             tin_number += 1
