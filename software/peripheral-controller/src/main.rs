@@ -7,7 +7,12 @@ use rtt_target::{rprintln, rtt_init, set_print_channel};
 use panic_probe as _;
 
 use nucleo_f401re::{
-    hal::{prelude::*, delay}, pac
+    hal::{
+        prelude::*,
+        delay,
+        i2c::I2c
+    },
+    pac
 };
 
 #[entry]
@@ -29,31 +34,43 @@ fn main() -> ! {
         };
     set_print_channel(channels.up.0);
 
-    if let (Some(dp), Some(cp)) = (
-        pac::Peripherals::take(),
-        cortex_m::peripheral::Peripherals::take(),
-    ) {
-        // Set up the LED. On the Mini-F4 it's connected to pin PC13.
-        let gpioa = dp.GPIOA.split();
-        let mut led = gpioa.pa5.into_push_pull_output();
+    let dp = pac::Peripherals::take().unwrap();
+    let cp = cortex_m::Peripherals::take().unwrap();
 
-        // Set up the system clock. We want to run at 48MHz for this one.
-        let rcc = dp.RCC.constrain();
-        let clocks = rcc.cfgr.sysclk(48.mhz()).freeze();
+    let rcc = dp.RCC.constrain();
+    let clocks = rcc.cfgr.sysclk(84.mhz()).freeze();
 
-        // Create a delay abstraction based on general-pupose 32-bit timer TIM5
-        let mut delay = delay::Delay::new(cp.SYST, clocks);
+    // Set up the LED. On the Mini-F4 it's connected to pin PC13.
+    let gpioa = dp.GPIOA.split();
+    let mut led = gpioa.pa5.into_push_pull_output();
 
-        loop {
-            // On for 1s, off for 1s.
-            led.set_high();
-            rprintln!("ON");
-            delay.delay_ms(1_000_u32);
-            led.set_low();
-            rprintln!("OFF");
-            delay.delay_us(1_000_000_u32);
-        }
+    let gpiob = dp.GPIOB.split();
+    let scl = gpiob
+        .pb8
+        .into_alternate_af4_open_drain();
+
+    let sda = gpiob
+        .pb7
+        .into_alternate_af4_open_drain();
+
+    let mut i2c = I2c::i2c1(dp.I2C1, (scl, sda), 100.khz(), clocks);
+    let mut data = [0u8; 8];
+    rprintln!("requesting....");
+
+    i2c.write_read(0x05, &[0x08], &mut data).unwrap();
+    rprintln!("{:?}", data);
+
+    // Create a delay abstraction based on general-pupose 32-bit timer TIM5
+    let mut delay = delay::Delay::new(cp.SYST, clocks);
+
+    loop {
+        // On for 1s, off for 1s.
+        led.set_high();
+        rprintln!("ON");
+        delay.delay_ms(1_000_u32);
+        led.set_low();
+        rprintln!("OFF");
+        delay.delay_us(1_000_000_u32);
     }
-
-    loop {}
 }
+
