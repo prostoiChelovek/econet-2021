@@ -31,7 +31,12 @@ images = list(map(load_image,names))
 
 for k, img in enumerate(images):
     for j, col in enumerate (bgr):
-        hist = cv.calcHist([img], [j], mask , [256], [0, 256])
+        hist = cv.calcHist(images=[img],
+                           channels=[j],
+                           mask=None,
+                           histSize=[256],
+                           ranges=[0, 256])
+                           
         histr1 = []
 
         for i in range(len(hist)):
