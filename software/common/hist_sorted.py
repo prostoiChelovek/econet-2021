@@ -9,14 +9,13 @@ LABLE_ROTATION = 50
 def load_image (name, num=0): 
     return cv.imread(f'/home/tima/rubbish/{name}/{name}{num}.jpg')
 
-
 def sort_hist(hist):
     # [(amount, value)]
     hist_map = [(y[0], x) for x, y in enumerate(hist)]
     return sorted(hist_map, key=lambda x: x[0], reverse=True)
 
 
-def create_hist(img, channel): 
+def create_hist(img, channel):     
     hist = cv.calcHist(images=[img],
                        channels=[channel],
                        mask=None,
@@ -61,8 +60,8 @@ def plot_hist(axis, histx, histy, color):
 def plot(axes, plot_data):
     for col, image_data in enumerate(plot_data):
         for row, (x, y) in enumerate(image_data):
-            axis = axes[col][row]
-            color = ('b', 'g', 'r')[col]  
+            axis = axes[row][col]
+            color = ('b', 'g', 'r')[row]  
             plot_hist(axis, x, y, color)
 
 
