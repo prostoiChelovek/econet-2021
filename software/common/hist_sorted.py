@@ -2,6 +2,8 @@ import cv2 as cv
 import numpy as np
 from matplotlib import pyplot as plt
 
+NAMES = ('paper', 'tin', 'bottle')
+
 
 def load_image (name, num=0): 
     return cv.imread(f'/home/tima/rubbish/{name}/{name}{num}.jpg')
@@ -16,21 +18,13 @@ def subplot (j, k, col, histx, histy, name, r):
     plt.setp(ax[j][k].get_xticklabels(), rotation = r, horizontalalignment='right', fontsize='x-small')
 
 
-mask = None
-
-name0 = 'paper'
-name1 = 'tin'
-name2 = 'bottle'
-
 fig , ax = plt.subplots(nrows = 3, ncols = 3, figsize = (25,25))
 fig.suptitle('rubbish')
 
-bgr = ('b', 'g', 'r')
-names = (name0,name1,name2)
-images = list(map(load_image,names))
+images = list(map(load_image, NAMES))
 
 for k, img in enumerate(images):
-    for j, col in enumerate (bgr):
+    for j, col in enumerate('b', 'g', 'r'):
         hist = cv.calcHist(images=[img],
                            channels=[j],
                            mask=None,
@@ -42,7 +36,7 @@ for k, img in enumerate(images):
         for i in range(len(hist)):
             histr1.append([hist[i][0], i])
 
-        histr1 = sorted(histr1, key = lambda x: x[0], reverse = True)
+        histr1 = sorted(histr1, key=lambda x: x[0], reverse = True)
 
         histx = []
         histy = []
