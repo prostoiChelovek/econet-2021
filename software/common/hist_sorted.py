@@ -9,6 +9,12 @@ def load_image (name, num=0):
     return cv.imread(f'/home/tima/rubbish/{name}/{name}{num}.jpg')
 
 
+def sort_hist(hist):
+    # [(amount, value)]
+    hist_map = [(y[0], x) for x, y in enumerate(hist)]
+    return sorted(hist_map, key=lambda x: x[0], reverse=True)
+
+
 def subplot (j, k, col, histx, histy, name, r):
     ax[j][k].plot(histx,histy,color = col)
     if j == 0:
@@ -31,12 +37,7 @@ for k, img in enumerate(images):
                            histSize=[256],
                            ranges=[0, 256])
                            
-        histr1 = []
-
-        for i in range(len(hist)):
-            histr1.append([hist[i][0], i])
-
-        histr1 = sorted(histr1, key=lambda x: x[0], reverse = True)
+        histr1 = sort_hist(hist)
 
         histx = []
         histy = []
