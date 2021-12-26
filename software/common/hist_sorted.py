@@ -37,16 +37,10 @@ for k, img in enumerate(images):
                            histSize=[256],
                            ranges=[0, 256])
                            
-        histr1 = sort_hist(hist)
+        hist_sorted = sort_hist(hist)
 
-        histx = []
-        histy = []
-
-        for i in range (len(histr1)):
-            histy.append(histr1[i][0])
-            histx.append(str(histr1[i][1]))
-
-        print(histx)
+        histx = [str(x[1]) for x in hist_sorted]
+        histy = [x[0] for x in hist_sorted]
         
         subplot(j,k,col,histx[:40],histy[:40],name = NAMES[k], r = 50)
         
