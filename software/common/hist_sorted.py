@@ -65,12 +65,17 @@ def plot(axes, plot_data):
             plot_hist(axis, x, y, color)
 
 
-fig , ax = plt.subplots(nrows = 3, ncols = 3, figsize = (25,25))
-fig.suptitle('rubbish')
+def main():
+    fig, ax = plt.subplots(nrows=3, ncols=3, figsize=(25, 25))
+    fig.suptitle('rubbish')
 
-images = list(map(load_image, NAMES))
-hists = create_hists(images)
-plot_data = create_plot_data(hists)
-plot(ax, plot_data)
+    images = list(map(load_image, NAMES))
+    hists = create_hists(images)
+    plot_data = create_plot_data(hists)
+    plot(ax, plot_data)
 
-plt.show()
+    plt.show()
+
+
+if __name__  == "__main__":
+    main()
