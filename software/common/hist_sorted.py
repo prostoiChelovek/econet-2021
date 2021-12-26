@@ -3,6 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 NAMES = ('paper', 'tin', 'bottle')
+NUM_SAMPLES = 40
 
 
 def load_image (name, num=0): 
@@ -42,6 +43,6 @@ for k, img in enumerate(images):
         histx = [str(x[1]) for x in hist_sorted]
         histy = [x[0] for x in hist_sorted]
         
-        subplot(j,k,col,histx[:40],histy[:40],name = NAMES[k], r = 50)
-        
+        subplot(j, k, col, histx[:NUM_SAMPLES], histy[:NUM_SAMPLES], name=NAMES[k], r=50)
+    
 plt.show()
