@@ -24,7 +24,7 @@ fig.suptitle('rubbish')
 images = list(map(load_image, NAMES))
 
 for k, img in enumerate(images):
-    for j, col in enumerate('b', 'g', 'r'):
+    for j, col in enumerate(('b', 'g', 'r')):
         hist = cv.calcHist(images=[img],
                            channels=[j],
                            mask=None,
@@ -47,6 +47,6 @@ for k, img in enumerate(images):
 
         print(histx)
         
-        subplot(j,k,col,histx[:40],histy[:40],name = names[k], r = 50)
+        subplot(j,k,col,histx[:40],histy[:40],name = NAMES[k], r = 50)
         
 plt.show()
