@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 
 NAMES = ('paper', 'tin', 'bottle')
 NUM_SAMPLES = 40
-
+LABLE_ROTATION = 50
 
 def load_image (name, num=0): 
     return cv.imread(f'/home/tima/rubbish/{name}/{name}{num}.jpg')
@@ -16,10 +16,15 @@ def sort_hist(hist):
     return sorted(hist_map, key=lambda x: x[0], reverse=True)
 
 
-def subplot (j, k, col, histx, histy, name, r):
-    ax[j][k].plot(histx,histy,color = col)
-    if j == 0:
-        ax[j, k].set_title(name)
+def create_hist(img, channel): 
+    hist = cv.calcHist(images=[img],
+                       channels=[channel],
+                       mask=None,
+                       histSize=[256],
+                       ranges=[0, 256])
+                           
+    return sort_hist(hist[:NUM_SAMPLES])
+
     
     ax[j][k].set_xticklabels(histx)
     plt.setp(ax[j][k].get_xticklabels(), rotation = r, horizontalalignment='right', fontsize='x-small')
@@ -32,17 +37,11 @@ images = list(map(load_image, NAMES))
 
 for k, img in enumerate(images):
     for j, col in enumerate(('b', 'g', 'r')):
-        hist = cv.calcHist(images=[img],
-                           channels=[j],
-                           mask=None,
-                           histSize=[256],
-                           ranges=[0, 256])
-                           
-        hist_sorted = sort_hist(hist)
+        hist = create_hist(img, j)
 
-        histx = [str(x[1]) for x in hist_sorted]
-        histy = [x[0] for x in hist_sorted]
+        histx = [str(x[1]) for x in hist]
+        histy = [x[0] for x in hist]
         
-        subplot(j, k, col, histx[:NUM_SAMPLES], histy[:NUM_SAMPLES], name=NAMES[k], r=50)
+        subplot(j, k, col, histx, histy, name=NAMES[k], r=50)
     
 plt.show()
