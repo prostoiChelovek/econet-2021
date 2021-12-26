@@ -1,10 +1,9 @@
 import cv2 as cv
 import numpy as np
 from matplotlib import pyplot as plt
-import seaborn as sns
+#import seaborn as sns
 
-def sorting (x):
-    return x[0]
+
 def typing (name):
     type = ''
     i = 0
@@ -20,36 +19,52 @@ def typing (name):
             
         if j > -1:
             return type
+
+
+def image (name):
+    return cv.imread('/home/tima/rubbish/{}/{}.jpg'.format(typing(name),name))
+
+
+def subplot (j, k, col, histx, histy, name, r):
+    ax[j][k].plot(histx,histy,color = col)
+    #ax[j][k] = sns.lineplot(data=histy,color = col)
+    #ax[j, k].set_title('{} {}'.format(name, col))
+    ax[j][k].set_xticklabels(histx)
+    plt.setp(ax[j][k].get_xticklabels(), rotation = r, horizontalalignment='right', fontsize='x-small')
+
+
 mask = None
-name = 'paper2'
 
-img = cv.imread('/home/tima/rubbish/{}/{}.jpg'.format(typing(name),name))
+name0 = 'paper0'
+name1 = 'tin0'
+name2 = 'bottle0'
 
-#print(hist)
-bgr = ('b','g','r')
-for i, col in enumerate (bgr):
-    hist = cv.calcHist([img],[i], mask , [256], [0, 256])
-    histr1 = []
+fig , ax = plt.subplots(nrows = 3, ncols = 3, figsize = (25,25))
+fig.suptitle('rubbish')
 
-    for i in range(len(hist)):
-        histr1.append([hist[i][0],i])
+bgr = ('b', 'g', 'r')
+names = (name0,name1,name2)
+images = list(map(image,names))
 
-    histr1 = sorted(histr1, key= sorting)
+for k, img in enumerate(images):
+    for j, col in enumerate (bgr):
+        hist = cv.calcHist([img], [j], mask , [256], [0, 256])
+        histr1 = []
 
+        for i in range(len(hist)):
+            histr1.append([hist[i][0], i])
 
-    histx = []
-    histy = []
-    for i in range (len(histr1)):
-        histy.append(histr1[i][0])
-        histx.append(str(histr1[i][1]))
-    print(histx)
+        histr1 = sorted(histr1, key = lambda x: x[0], reverse = True)
 
-    write_hist = sns.lineplot(data=histy,color = col)
+        histx = []
+        histy = []
 
-    write_hist.set_xticklabels(histx)
+        for i in range (len(histr1)):
+            histy.append(histr1[i][0])
+            histx.append(str(histr1[i][1]))
 
-    
-    #print(hist)
-
-
+        print(histx)
+        
+        subplot(j,k,col,histx[:40],histy[:40],name = names[k], r = 50)
+        
 plt.show()
