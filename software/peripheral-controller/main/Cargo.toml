@@ -1,0 +1,24 @@
+[package]
+edition = "2021"
+name = "peripheral-controller"
+version = "0.1.0"
+
+[[bin]]
+name = "peripheral-controller"
+bench = false
+test = false
+
+[dependencies]
+nb = "1.0.0"
+cortex-m = "0.7"
+cortex-m-rt = "0.6"
+embedded-hal = "0.2"
+
+panic-halt = "0.2.0"
+rtt-target = { version = "0.3.1", features = ["cortex-m"] }
+panic-rtt-target = { version = "0.1.2", features = ["cortex-m"] }
+panic-probe = { version = "0.2.0", features = ["print-rtt"] }
+stm32f4xx-hal = { version = "0.10", features = ["rt", "stm32f401", "usb_fs"] }
+
+l298n = "0.2.0"
+
