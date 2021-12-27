@@ -10,6 +10,8 @@ use stm32f4xx_hal::{
     prelude::*, delay, timer::Timer, pac
 };
 
+use l298n::Motor;
+
 #[entry]
 fn main() -> ! {
     let channels = 
@@ -35,37 +37,23 @@ fn main() -> ! {
     let rcc = dp.RCC.constrain();
     let clocks = rcc.cfgr.sysclk(84.mhz()).freeze();
 
-    // Set up the LED. On the Mini-F4 it's connected to pin PC13.
     let gpioa = dp.GPIOA.split();
-    let mut led = gpioa.pa5.into_push_pull_output();
-
     let gpiob = dp.GPIOB.split();
-    let scl = gpiob
-        .pb8
-        .into_alternate_af4_open_drain();
 
-    let sda = gpiob
-        .pb7
-        .into_alternate_af4_open_drain();
+    let (in_1, in_2) = (gpiob.pb10.into_push_pull_output(), gpiob.pb4.into_push_pull_output());
+    let en_pin = gpioa.pa8.into_alternate();
+    let en_pwm = Timer::new(dp.TIM1, &clocks).pwm(en_pin, 2.khz());
 
-    let mut i2c = I2c::i2c1(dp.I2C1, (scl, sda), 100.khz(), clocks);
-    let mut data = [0u8; 8];
-    rprintln!("requesting....");
+    let mut motor = Motor::new(in_1, in_2, en_pwm);
 
-    i2c.write_read(0x05, &[0x08], &mut data).unwrap();
-    rprintln!("{:?}", data);
-
-    // Create a delay abstraction based on general-pupose 32-bit timer TIM5
     let mut delay = delay::Delay::new(cp.SYST, &clocks);
 
     loop {
-        // On for 1s, off for 1s.
-        led.set_high();
-        rprintln!("ON");
-        delay.delay_ms(1_000_u32);
-        led.set_low();
-        rprintln!("OFF");
-        delay.delay_us(1_000_000_u32);
+        motor.forward();
+        for i in 0..motor.get_max_duty() {
+            motor.set_duty(i);
+            delay.delay_ms(1_u32);
+        }
     }
 }
 
