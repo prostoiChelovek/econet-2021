@@ -6,13 +6,8 @@ use cortex_m_rt::entry;
 use rtt_target::{rprintln, rtt_init, set_print_channel};
 use panic_probe as _;
 
-use nucleo_f401re::{
-    hal::{
-        prelude::*,
-        delay,
-        i2c::I2c
-    },
-    pac
+use stm32f4xx_hal::{
+    prelude::*, delay, timer::Timer, pac
 };
 
 #[entry]
@@ -61,7 +56,7 @@ fn main() -> ! {
     rprintln!("{:?}", data);
 
     // Create a delay abstraction based on general-pupose 32-bit timer TIM5
-    let mut delay = delay::Delay::new(cp.SYST, clocks);
+    let mut delay = delay::Delay::new(cp.SYST, &clocks);
 
     loop {
         // On for 1s, off for 1s.
