@@ -1,9 +1,9 @@
 #![no_std]
 
 use compare::{Compare, natural};
-use num_traits::{Zero, Signed};
+use num_traits::Zero;
 
-use core::cmp::Ordering::{Less, Equal, Greater};
+use core::{cmp::Ordering::{Less, Equal, Greater}, intrinsics::transmute};
 
 #[derive(Debug)]
 pub enum RotationDirection {
@@ -48,9 +48,9 @@ impl<D, S> SetSpeed for Motor<D, S>
 where
     D: SetDirection,
     S: SetSpeed,
-    S::Speed: Zero + Signed + Ord + Compare<S::Speed>
+    S::Speed: Copy + Ord
 {
-    type Speed = S::Speed;
+    type Speed = i8;
 
     fn set_speed(&mut self, speed: Self::Speed) {
         let cmp = natural();
@@ -60,6 +60,9 @@ where
             Greater => { RotationDirection::Clockwise }
         };
         self.dir.set_direction(direction);
+
+        let speed = unsafe { *transmute::<&i8, &S::Speed>(&speed.abs()) };
+
         self.speed.set_speed(speed);
     }
 }
