@@ -15,7 +15,7 @@ chip_descriptions = []
 log_level = "WARN"
 
 [default.rtt]
-enabled = true
+enabled = false
 timeout = 3000
 show_timestamps = true
 
