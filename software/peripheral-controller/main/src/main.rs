@@ -10,7 +10,8 @@ use stm32f4xx_hal::{
     prelude::*, delay, timer::Timer, pac
 };
 
-use l298n::Motor;
+use motor::{Motor, SetSpeed};
+use dc_motor::{TwoPinSetDirection, PwmSetSpeed};
 
 #[entry]
 fn main() -> ! {
@@ -44,15 +45,16 @@ fn main() -> ! {
     let en_pin = gpioa.pa8.into_alternate();
     let en_pwm = Timer::new(dp.TIM1, &clocks).pwm(en_pin, 2.khz());
 
-    let mut motor = Motor::new(in_1, in_2, en_pwm);
+    let directin = TwoPinSetDirection::new(in_1, in_2);
+    let speed = PwmSetSpeed::new(en_pwm, 25);
+    let mut motor = Motor::new(directin, speed);
 
     let mut delay = delay::Delay::new(cp.SYST, &clocks);
 
     loop {
-        motor.forward();
-        for i in 0..motor.get_max_duty() {
-            motor.set_duty(i);
-            delay.delay_ms(1_u32);
+        for i in -100_i8..100_i8 {
+            motor.set_speed(i);
+            delay.delay_ms(100u8);
         }
     }
 }
