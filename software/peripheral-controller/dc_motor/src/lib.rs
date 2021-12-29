@@ -1,6 +1,8 @@
 #![no_std]
 
-use num_traits::{Num, Zero};
+#![feature(convert_float_to_int)]
+
+use core::convert::FloatToInt;
 
 use embedded_hal::{
     digital::v2::{OutputPin, PinState},
@@ -8,10 +10,6 @@ use embedded_hal::{
 };
 
 use motor::{RotationDirection, SetSpeed, SetDirection};
-
-fn map_range<T: Num + Copy>(from_range: (T, T), to_range: (T, T), s: T) -> T {
-    to_range.0 + (s - from_range.0) * (to_range.1 - to_range.0) / (from_range.1 - from_range.0)
-}
 
 pub struct PwmSetSpeed<P>
 where
@@ -38,22 +36,20 @@ where
 impl<P: PwmPin> SetSpeed for PwmSetSpeed<P> 
 where
     P: PwmPin,
-    P::Duty: From<u8> + Num + Ord + Copy
+    P::Duty: From<u8> + Into<f32>,
+    f32: FloatToInt<P::Duty>
 {
     type Speed = u8;
 
     fn set_speed(&mut self, speed: Self::Speed) {
-        let zero_duty = P::Duty::zero();
-        let hundred_duty = P::Duty::from(100);
-
         let speed = speed + self.min_speed;
         let speed = speed.max(0).min(100);
-        let speed = P::Duty::from(speed);
+        let speed: f32 = speed.into();
 
-        let duty = map_range(
-            (zero_duty, hundred_duty),
-            (zero_duty, self.pin.get_max_duty()),
-            speed);
+        let max_duty: f32 = self.pin.get_max_duty().into();
+        let duty = max_duty * speed / 100_f32;
+        let duty = unsafe { duty.to_int_unchecked::<P::Duty>() };
+
         self.pin.set_duty(duty);
     }
 }
