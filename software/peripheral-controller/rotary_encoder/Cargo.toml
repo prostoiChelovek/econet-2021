@@ -1,0 +1,8 @@
+[package]
+edition = "2021"
+name = "rotary_encoder"
+version = "0.1.0"
+
+[dependencies]
+embedded-hal = "0.2"
+

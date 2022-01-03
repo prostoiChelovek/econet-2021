@@ -23,4 +23,5 @@ stm32f4xx-hal = { version = "0.11.1", features = ["rt", "stm32f401", "usb_fs"] }
 
 motor = { path = "../motor" }
 dc_motor = { path = "../dc_motor" }
+rotary_encoder = { path = "../rotary_encoder" }
 

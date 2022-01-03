@@ -1,5 +1,8 @@
 [workspace]
 members = [
+    "motor",
+    "dc_motor",
+    "rotary_encoder",
     "main"
 ]
 

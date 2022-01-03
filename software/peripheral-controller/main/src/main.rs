@@ -15,8 +15,9 @@ use stm32f4xx_hal::{
     qei::Qei
 };
 
-use motor::{Motor, SetSpeed};
+use motor::{Motor, SetSpeed, RotationDirection};
 use dc_motor::{TwoPinSetDirection, PwmSetSpeed};
+use rotary_encoder::RotaryEncoder;
 
 type MicrosTimer = CounterUs<TIM2>;
 static MICROS_TIMER: Mutex<RefCell<Option<MicrosTimer>>> = Mutex::new(RefCell::new(None));
@@ -79,18 +80,16 @@ fn main() -> ! {
 
     let encoder_pins = (gpioa.pa0.into_alternate(), gpioa.pa1.into_alternate());
     let encoder_timer = dp.TIM5;
-    let encoder = Qei::new(encoder_timer, encoder_pins);
+    let qei = Qei::new(encoder_timer, encoder_pins);
+    let mut encoder = RotaryEncoder::new(qei, 1440);
 
     let mut delay = delay::Delay::new(cp.SYST, &clocks);
 
-    let mut count: i32 = 0;
-    let mut last: i32 = 0;
     loop {
-        let current = encoder.count() as i32;
-        count += last - current;
-        last = current;
-
-        rprintln!("{}", count);
+        encoder.update();
+        let count = encoder.get_count();
+        let revs = encoder.get_revolutions();
+        rprintln!("{} {}", count, revs);
 
         delay.delay_ms(10_u32);
     }
