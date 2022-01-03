@@ -12,6 +12,7 @@ use fugit::TimerDurationU32;
 
 use stm32f4xx_hal::{
     prelude::*, delay, timer::{CounterUs, Timer}, pac, pac::TIM2,
+    qei::Qei
 };
 
 use motor::{Motor, SetSpeed};
@@ -76,13 +77,21 @@ fn main() -> ! {
     let speed = PwmSetSpeed::new(en_pwm, 25);
     let mut motor = Motor::new(directin, speed);
 
+    let encoder_pins = (gpioa.pa0.into_alternate(), gpioa.pa1.into_alternate());
+    let encoder_timer = dp.TIM5;
+    let encoder = Qei::new(encoder_timer, encoder_pins);
+
     let mut delay = delay::Delay::new(cp.SYST, &clocks);
 
+    let mut count: i32 = 0;
+    let mut last: i32 = 0;
     loop {
-        for i in -100_i8..100_i8 {
-            motor.set_speed(i);
-            delay.delay_ms(100u8);
-        }
+        let current = encoder.count() as i32;
+        count += last - current;
+        last = current;
+
+        rprintln!("{}", count);
+
+        delay.delay_ms(10_u32);
     }
 }
-
