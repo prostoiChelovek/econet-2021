@@ -1,17 +1,38 @@
 #![no_main]
 #![no_std]
 
+use core::cell::RefCell;
+use cortex_m::interrupt::Mutex;
 use cortex_m_rt::entry;
 
 use rtt_target::{rprintln, rtt_init, set_print_channel};
 use panic_probe as _;
 
+use fugit::TimerDurationU32;
+
 use stm32f4xx_hal::{
-    prelude::*, delay, timer::Timer, pac
+    prelude::*, delay, timer::{CounterUs, Timer}, pac, pac::TIM2,
 };
 
 use motor::{Motor, SetSpeed};
 use dc_motor::{TwoPinSetDirection, PwmSetSpeed};
+
+type MicrosTimer = CounterUs<TIM2>;
+static MICROS_TIMER: Mutex<RefCell<Option<MicrosTimer>>> = Mutex::new(RefCell::new(None));
+
+fn micros() -> u32 {
+    static mut LOCAL_MICROS_TIMER: Option<MicrosTimer> = None;
+
+    unsafe {
+        let tim = LOCAL_MICROS_TIMER.get_or_insert_with(|| {
+            cortex_m::interrupt::free(|cs| { 
+                MICROS_TIMER.borrow(cs).replace(None).unwrap()
+            })
+        });
+        
+        tim.now().ticks()
+    }
+}
 
 #[entry]
 fn main() -> ! {
@@ -37,6 +58,12 @@ fn main() -> ! {
 
     let rcc = dp.RCC.constrain();
     let clocks = rcc.cfgr.sysclk(84.mhz()).freeze();
+
+    let mut micros_timer = Timer::new(dp.TIM2, &clocks).counter_us();
+    micros_timer.start(TimerDurationU32::from_ticks(u32::max_value())).unwrap();
+    cortex_m::interrupt::free(|cs| {
+        *MICROS_TIMER.borrow(cs).borrow_mut() = Some(micros_timer);
+    });
 
     let gpioa = dp.GPIOA.split();
     let gpiob = dp.GPIOB.split();
