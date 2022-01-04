@@ -81,16 +81,16 @@ fn main() -> ! {
     let encoder_pins = (gpioa.pa0.into_alternate(), gpioa.pa1.into_alternate());
     let encoder_timer = dp.TIM5;
     let qei = Qei::new(encoder_timer, encoder_pins);
-    let mut encoder = RotaryEncoder::new(qei, 1440);
+    let mut encoder = RotaryEncoder::new(qei, 1440_f32);
 
     let mut delay = delay::Delay::new(cp.SYST, &clocks);
 
     loop {
-        encoder.update();
-        let count = encoder.get_count();
-        let revs = encoder.get_revolutions();
-        rprintln!("{} {}", count, revs);
+        encoder.update(100);
+        let pos = encoder.get_position();
+        let vel = encoder.get_velocity();
+        rprintln!("{} {}", pos, vel);
 
-        delay.delay_ms(10_u32);
+        delay.delay_ms(100_u32);
     }
 }

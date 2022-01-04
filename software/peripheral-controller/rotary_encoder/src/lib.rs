@@ -5,40 +5,56 @@ use embedded_hal::Qei;
 pub struct RotaryEncoder<QEI>
 where
     QEI: Qei,
-    QEI::Count: TryInto<i64>
+    QEI::Count: Into<i64>
 {
     qei: QEI,
-    pub ppr: u32,
-    count: i32,
-    last_count: i64
+
+    pub ppr: f32,
+
+    // angular
+    position: f32,
+    velocity: f32,
+
+    last_count: i64,
 }
 
 impl<QEI> RotaryEncoder<QEI> 
 where
     QEI: Qei,
-    QEI::Count: TryInto<i64>
+    QEI::Count: Into<i64>
 {
-    pub fn new(qei: QEI, pulse_per_rev: u32) -> Self {
+    pub fn new(qei: QEI, pulse_per_rev: f32) -> Self {
         Self {
             qei,
+
             ppr: pulse_per_rev,
-            count: 0,
-            last_count: 0
+
+            position: 0_f32,
+            velocity: 0_f32,
+
+            last_count: 0,
         }
     }
 
-    pub fn update(&mut self) {
-        let current: i64 = self.qei.count().try_into().unwrap_or(0);
-        self.count += (self.last_count - current) as i32;
-        self.last_count = current;
+    pub fn update(&mut self, time_delta: u32) {
+        let count: i64 = self.qei.count().into();
+        let count_delta = (self.last_count - count) as i32;
+
+        let last_position = self.position;
+        self.position += count_delta as f32 / self.ppr;
+
+        let position_delta = self.position - last_position;
+        self.velocity = position_delta / time_delta as f32;
+
+        self.last_count = count;
     }
 
-    pub fn get_count(&self) -> i32 {
-        self.count
+    pub fn get_position(&self) -> f32 {
+        self.position
     }
 
-    pub fn get_revolutions(&self) -> f32 {
-        (self.count as f32) / (self.ppr as f32)
+    pub fn get_velocity(&self) -> f32 {
+        self.velocity
     }
 }
 
