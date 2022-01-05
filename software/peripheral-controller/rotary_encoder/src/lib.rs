@@ -36,7 +36,7 @@ where
         }
     }
 
-    pub fn update(&mut self, time_delta: u32) {
+    pub fn update(&mut self, time_delta_seconds: f32) {
         let count: i64 = self.qei.count().into();
         let count_delta = (self.last_count - count) as i32;
 
@@ -44,7 +44,7 @@ where
         self.position += count_delta as f32 / self.ppr;
 
         let position_delta = self.position - last_position;
-        self.velocity = position_delta / time_delta as f32;
+        self.velocity = position_delta / time_delta_seconds;
 
         self.last_count = count;
     }

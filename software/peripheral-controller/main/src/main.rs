@@ -86,7 +86,7 @@ fn main() -> ! {
     let mut delay = delay::Delay::new(cp.SYST, &clocks);
 
     loop {
-        encoder.update(100);
+        encoder.update(0.1);
         let pos = encoder.get_position();
         let vel = encoder.get_velocity();
         rprintln!("{} {}", pos, vel);
