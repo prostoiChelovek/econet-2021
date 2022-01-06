@@ -24,6 +24,8 @@ stm32f4xx-hal = { version = "0.11.1", features = ["rt", "stm32f401", "usb_fs", "
 cortex-m-rtic = "1.0.0"
 rtic-monotonic = { version = "1.0" }
 
+pid = "3.0.0"
+
 motor = { path = "../motor" }
 dc_motor = { path = "../dc_motor" }
 encoder = { path = "../encoder" }

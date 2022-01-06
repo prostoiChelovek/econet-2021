@@ -20,10 +20,13 @@ mod app {
         qei::Qei
     };
 
-    use motor::{Motor, SetSpeed};
+    use pid::Pid;
+
+    use motor::{Motor, SetSpeed, GetSpeed};
     use dc_motor::{TwoPinSetDirection, PwmSetSpeed};
     use encoder::*;
     use rotary_encoder::RotaryEncoder;
+    use wheel::Wheel;
 
     type OutPP = Output<PushPull>;
     type EncoderPinMode = Alternate<PushPull, 2_u8>;
@@ -31,30 +34,34 @@ mod app {
      #[monotonic(binds = TIM2, default = true)]
     type MicrosecMono = MonoTimer<pac::TIM2, 1_000_000>;
 
-    mod left_motor {
+    mod left_wheel {
         use super::*;
 
-        type SetDirectionT = TwoPinSetDirection<PB10<OutPP>, PB4<OutPP>>;
-        type SetSpeedT = PwmSetSpeed<PwmChannel<TIM1, C1>>;
-        pub type Motor = motor::Motor<SetDirectionT, SetSpeedT>;
-    }
+        mod _motor {
+            use super::*;
 
-    mod left_encoder {
-        use super::*;
+            type SetDirectionT = TwoPinSetDirection<PB10<OutPP>, PB4<OutPP>>;
+            type SetSpeedT = PwmSetSpeed<PwmChannel<TIM1, C1>>;
+            pub type Motor = motor::Motor<SetDirectionT, SetSpeedT>;
+        }
 
-        type QeiT = Qei<TIM5, (PA0<EncoderPinMode>, PA1<EncoderPinMode>)>;
-        pub type Encoder = RotaryEncoder<QeiT>;
+        mod _encoder {
+            use super::*;
+
+            type QeiT = Qei<TIM5, (PA0<EncoderPinMode>, PA1<EncoderPinMode>)>;
+            pub type Encoder = RotaryEncoder<QeiT>;
+        }
+
+        pub type WheelT = Wheel<_motor::Motor, _encoder::Encoder>;
     }
 
     #[shared]
     struct Shared {
-        encoder: left_encoder::Encoder,
+        wheel: left_wheel::WheelT,
     }
 
     #[local]
-    struct Local {
-        motor: left_motor::Motor,
-    }
+    struct Local { }
 
     #[init]
     fn init(ctx: init::Context) -> (Shared, Local, init::Monotonics) {
@@ -94,27 +101,35 @@ mod app {
         let qei = Qei::new(encoder_timer, encoder_pins);
         let encoder = RotaryEncoder::new(qei, 1440_f32);
 
+        let pid = Pid::new(10.0, 10.0, 10.0,
+                           100.0, 100.0, 100.0,
+                           100.0,
+                           0.0);
+        let mut wheel = Wheel::new(motor, encoder, pid);
+
+        wheel.set_speed(1.0);
+
         let mono = Timer::new(ctx.device.TIM2, &clocks).monotonic();
 
         updater::spawn().ok();
 
         (
             Shared {
-                encoder,
+                wheel
             },
             Local {
-                motor,
             },
             init::Monotonics(mono),
         )
     }
 
-    #[task(shared = [encoder])]
+    #[task(shared = [wheel])]
     fn updater(mut cx: updater::Context) {
         const TIME_DELTA_SECONDS: f32 = 0.1;
 
-        cx.shared.encoder.lock(|encoder| {
-            encoder.update(TIME_DELTA_SECONDS);
+        cx.shared.wheel.lock(|wheel| {
+            wheel.update(TIME_DELTA_SECONDS);
+            rprintln!("{}", wheel.get_speed());
         });
 
         updater::spawn_after(100.millis()).ok();

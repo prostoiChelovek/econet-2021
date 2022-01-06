@@ -4,6 +4,7 @@ members = [
     "dc_motor",
     "encoder",
     "rotary_encoder",
+    "wheel",
     "main"
 ]
 
