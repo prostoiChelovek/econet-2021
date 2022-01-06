@@ -30,9 +30,6 @@ mod app {
      #[monotonic(binds = TIM2, default = true)]
     type MicrosecMono = MonoTimer<pac::TIM2, 1_000_000>;
 
-    #[shared]
-    struct Shared { }
-
     mod left_motor {
         use super::*;
 
@@ -48,10 +45,14 @@ mod app {
         pub type Encoder = RotaryEncoder<QeiT>;
     }
 
+    #[shared]
+    struct Shared {
+        encoder: left_encoder::Encoder,
+    }
+
     #[local]
     struct Local {
         motor: left_motor::Motor,
-        encoder: left_encoder::Encoder
     }
 
     #[init]
@@ -97,20 +98,23 @@ mod app {
         updater::spawn().ok();
 
         (
-            Shared { },
+            Shared {
+                encoder,
+            },
             Local {
                 motor,
-                encoder
             },
             init::Monotonics(mono),
         )
     }
 
-    #[task(local = [encoder])]
-    fn updater(cx: updater::Context) {
-        let encoder = cx.local.encoder;
+    #[task(shared = [encoder])]
+    fn updater(mut cx: updater::Context) {
+        const TIME_DELTA_SECONDS: f32 = 0.1;
 
-        encoder.update(0.1);
+        cx.shared.encoder.lock(|encoder| {
+            encoder.update(TIME_DELTA_SECONDS);
+        });
 
         updater::spawn_after(100.millis()).ok();
     }
