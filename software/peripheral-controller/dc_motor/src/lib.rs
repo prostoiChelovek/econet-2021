@@ -9,7 +9,7 @@ use embedded_hal::{
     PwmPin,
 };
 
-use motor::{RotationDirection, SetSpeed, SetDirection};
+use motor::{RotationDirection, SetSpeed, GetSpeed, SetDirection};
 
 pub struct PwmSetSpeed<P>
 where
@@ -17,7 +17,9 @@ where
     P::Duty: From<u8>
 {
     pin: P,
-    pub min_speed: u8
+    pub min_speed: u8,
+
+    current_speed: u8
 }
 
 impl<P> PwmSetSpeed<P>
@@ -29,7 +31,10 @@ where
         let mut pin = pin;
         pin.enable();
 
-        Self { pin, min_speed }
+        Self {
+            pin, min_speed,
+            current_speed: 0
+        }
     }
 }
 
@@ -44,6 +49,7 @@ where
     fn set_speed(&mut self, speed: Self::Speed) {
         let speed = speed + self.min_speed;
         let speed = speed.max(0).min(100);
+        self.current_speed = speed;
         let speed: f32 = speed.into();
 
         let max_duty: f32 = self.pin.get_max_duty().into();
@@ -51,6 +57,19 @@ where
         let duty = unsafe { duty.to_int_unchecked::<P::Duty>() };
 
         self.pin.set_duty(duty);
+    }
+}
+
+
+impl<P: PwmPin> GetSpeed for PwmSetSpeed<P> 
+where
+    P: PwmPin,
+    P::Duty: From<u8>,
+{
+    type Speed = u8;
+
+    fn get_speed(&mut self) -> <Self as GetSpeed>::Speed {
+        self.current_speed
     }
 }
 
