@@ -5,7 +5,7 @@ use num_traits::{Zero, NumCast};
 
 use core::{cmp::Ordering::{Less, Equal, Greater}, intrinsics::transmute};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum RotationDirection {
     Clockwise,
     Counterclockwise,
@@ -69,6 +69,7 @@ where
             Equal => { RotationDirection::None },
             Greater => { RotationDirection::Clockwise }
         };
+        self.current_direction = direction;
         self.dir.set_direction(direction);
 
         let speed = unsafe { *transmute::<&i8, &S::Speed>(&speed.abs()) };
