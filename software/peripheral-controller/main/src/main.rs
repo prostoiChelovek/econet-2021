@@ -5,7 +5,7 @@ use panic_probe as _;
 
 #[rtic::app(device = stm32f4xx_hal::pac, peripherals = true, dispatchers = [USART1])]
 mod app {
-    use rtt_target::{rtt_init, set_print_channel};
+    use rtt_target::{rtt_init, set_print_channel, rprintln};
 
     use stm32f4xx_hal::{
         prelude::*,
@@ -54,7 +54,7 @@ mod app {
         encoder: left_encoder::Encoder
     }
 
-     #[init]
+    #[init]
     fn init(ctx: init::Context) -> (Shared, Local, init::Monotonics) {
         let channels = 
             rtt_init! {
@@ -94,7 +94,7 @@ mod app {
 
         let mono = Timer::new(ctx.device.TIM2, &clocks).monotonic();
 
-        task1::spawn().ok();
+        updater::spawn().ok();
 
         (
             Shared { },
@@ -106,8 +106,12 @@ mod app {
         )
     }
 
-    #[task(local = [motor])]
-    fn task1(cx: task1::Context) {
-        cx.local.motor.set_speed(100);
+    #[task(local = [encoder])]
+    fn updater(cx: updater::Context) {
+        let encoder = cx.local.encoder;
+
+        encoder.update(0.1);
+
+        updater::spawn_after(100.millis()).ok();
     }
 }
