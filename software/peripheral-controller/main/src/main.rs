@@ -129,7 +129,6 @@ mod app {
 
         cx.shared.wheel.lock(|wheel| {
             wheel.update(TIME_DELTA_SECONDS);
-            rprintln!("{}", wheel.get_speed());
         });
 
         updater::spawn_after(100.millis()).ok();

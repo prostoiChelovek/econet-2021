@@ -1,7 +1,5 @@
 #![no_std]
 
-use rtt_target::rprintln;
-
 use core::{ops::Add, fmt::Display};
 
 use num_traits::{NumCast, Signed, ToPrimitive, bounds::Bounded};
@@ -43,7 +41,7 @@ impl<S, E> Update for Wheel<S, E>
 where
     S: SetSpeed + GetSpeed,
     <S as SetSpeed>::Speed: NumCast + Bounded,
-    <S as GetSpeed>::Speed: NumCast + Add + Display + Copy,
+    <S as GetSpeed>::Speed: NumCast + Add + Copy,
     <<S as GetSpeed>::Speed as Add>::Output: ToPrimitive + Display,
     E: Encoder
 {
@@ -60,8 +58,6 @@ where
         let current_speed: f32 = NumCast::from(self.speed.get_speed()).unwrap();
         let new_speed = current_speed + control;
         let new_speed = new_speed.max(min_speed_val).min(max_speed_val);
-
-        rprintln!("target: {}, vel: {}, control: {}, new_speed: {}, speed_before: {}", self.pid.setpoint, velocity, control, new_speed, self.speed.get_speed());
 
         self.speed.set_speed(NumCast::from(new_speed).unwrap());
     }
