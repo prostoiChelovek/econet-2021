@@ -2,6 +2,8 @@
 
 use embedded_hal::Qei;
 
+use encoder::{Update, GetPosition, GetVelocity};
+
 pub struct RotaryEncoder<QEI>
 where
     QEI: Qei,
@@ -35,8 +37,14 @@ where
             last_count: 0,
         }
     }
+}
 
-    pub fn update(&mut self, time_delta_seconds: f32) {
+impl<QEI> Update for RotaryEncoder<QEI> 
+where
+    QEI: Qei,
+    QEI::Count: Into<i64>
+{
+    fn update(&mut self, time_delta_seconds: f32) {
         let count: i64 = self.qei.count().into();
         let count_delta = (self.last_count - count) as i32;
 
@@ -48,12 +56,24 @@ where
 
         self.last_count = count;
     }
+}
 
-    pub fn get_position(&self) -> f32 {
+impl<QEI> GetPosition for RotaryEncoder<QEI> 
+where
+    QEI: Qei,
+    QEI::Count: Into<i64>
+{
+    fn get_position(&self) -> f32 {
         self.position
     }
+}
 
-    pub fn get_velocity(&self) -> f32 {
+impl<QEI> GetVelocity for RotaryEncoder<QEI> 
+where
+    QEI: Qei,
+    QEI::Count: Into<i64>
+{
+    fn get_velocity(&self) -> f32 {
         self.velocity
     }
 }

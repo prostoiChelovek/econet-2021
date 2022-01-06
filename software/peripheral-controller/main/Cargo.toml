@@ -26,5 +26,7 @@ rtic-monotonic = { version = "1.0" }
 
 motor = { path = "../motor" }
 dc_motor = { path = "../dc_motor" }
+encoder = { path = "../encoder" }
 rotary_encoder = { path = "../rotary_encoder" }
+wheel = { path = "../wheel" }
 

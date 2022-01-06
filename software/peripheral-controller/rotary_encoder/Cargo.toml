@@ -6,3 +6,5 @@ version = "0.1.0"
 [dependencies]
 embedded-hal = "0.2"
 
+encoder = { path = "../encoder" }
+

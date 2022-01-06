@@ -22,6 +22,7 @@ mod app {
 
     use motor::{Motor, SetSpeed};
     use dc_motor::{TwoPinSetDirection, PwmSetSpeed};
+    use encoder::*;
     use rotary_encoder::RotaryEncoder;
 
     type OutPP = Output<PushPull>;
