@@ -9,10 +9,11 @@ mod app {
 
     use stm32f4xx_hal::{
         prelude::*,
-        pac, pac::TIM1,
+        pac, pac::{TIM1, TIM5},
         gpio::{
+            gpioa::{PA0, PA1},
             gpiob::{PB4, PB10},
-            Output, PushPull
+            Output, PushPull, Alternate
         },
         timer::{monotonic::MonoTimer, Timer},
         pwm::{PwmChannel, C1},
@@ -24,6 +25,7 @@ mod app {
     use rotary_encoder::RotaryEncoder;
 
     type OutPP = Output<PushPull>;
+    type EncoderPinMode = Alternate<PushPull, 2_u8>;
 
      #[monotonic(binds = TIM2, default = true)]
     type MicrosecMono = MonoTimer<pac::TIM2, 1_000_000>;
@@ -39,9 +41,17 @@ mod app {
         pub type Motor = motor::Motor<SetDirectionT, SetSpeedT>;
     }
 
+    mod left_encoder {
+        use super::*;
+
+        type QeiT = Qei<TIM5, (PA0<EncoderPinMode>, PA1<EncoderPinMode>)>;
+        pub type Encoder = RotaryEncoder<QeiT>;
+    }
+
     #[local]
     struct Local {
         motor: left_motor::Motor,
+        encoder: left_encoder::Encoder
     }
 
      #[init]
@@ -80,7 +90,7 @@ mod app {
         let encoder_pins = (gpioa.pa0.into_alternate(), gpioa.pa1.into_alternate());
         let encoder_timer = ctx.device.TIM5;
         let qei = Qei::new(encoder_timer, encoder_pins);
-        let mut _encoder = RotaryEncoder::new(qei, 1440_f32);
+        let encoder = RotaryEncoder::new(qei, 1440_f32);
 
         let mono = Timer::new(ctx.device.TIM2, &clocks).monotonic();
 
@@ -89,7 +99,8 @@ mod app {
         (
             Shared { },
             Local {
-                motor
+                motor,
+                encoder
             },
             init::Monotonics(mono),
         )
