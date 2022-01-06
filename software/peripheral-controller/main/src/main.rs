@@ -10,7 +10,10 @@ mod app {
     use stm32f4xx_hal::{
         prelude::*,
         pac, pac::TIM1,
-        gpio::{Output, Pin, PushPull},
+        gpio::{
+            gpiob::{PB4, PB10},
+            Output, PushPull
+        },
         timer::{monotonic::MonoTimer, Timer},
         pwm::{PwmChannel, C1},
         qei::Qei
@@ -20,17 +23,25 @@ mod app {
     use dc_motor::{TwoPinSetDirection, PwmSetSpeed};
     use rotary_encoder::RotaryEncoder;
 
+    type OutPP = Output<PushPull>;
+
      #[monotonic(binds = TIM2, default = true)]
     type MicrosecMono = MonoTimer<pac::TIM2, 1_000_000>;
 
     #[shared]
     struct Shared { }
 
-    // this should be illegal
-    type MyMotor = Motor<TwoPinSetDirection<Pin<Output<PushPull>, 'B', 10_u8>, Pin<Output<PushPull>, 'B', 4_u8>>, PwmSetSpeed<PwmChannel<TIM1, C1>>>;
+    mod left_motor {
+        use super::*;
+
+        type SetDirectionT = TwoPinSetDirection<PB10<OutPP>, PB4<OutPP>>;
+        type SetSpeedT = PwmSetSpeed<PwmChannel<TIM1, C1>>;
+        pub type Motor = motor::Motor<SetDirectionT, SetSpeedT>;
+    }
+
     #[local]
     struct Local {
-        motor: MyMotor
+        motor: left_motor::Motor,
     }
 
      #[init]
