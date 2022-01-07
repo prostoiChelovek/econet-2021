@@ -60,7 +60,7 @@ where
 
         self.encoder.update(time_delta_seconds);
 
-        let velocity = -self.encoder.get_velocity();
+        let velocity = self.encoder.get_velocity();
         let velocity = self.velocity_to_percent(velocity);
 
         let control = self.pid.next_control_output(velocity).output;
