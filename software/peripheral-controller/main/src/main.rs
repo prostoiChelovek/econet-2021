@@ -5,11 +5,13 @@ use panic_probe as _;
 
 #[rtic::app(device = stm32f4xx_hal::pac, peripherals = true, dispatchers = [USART1])]
 mod app {
+    use core::fmt::Write;
+
     use rtt_target::{rtt_init, set_print_channel, rprintln};
 
     use stm32f4xx_hal::{
         prelude::*,
-        pac, pac::{TIM1, TIM5},
+        pac, pac::{TIM1, TIM5, USART2},
         gpio::{
             gpioa::{PA0, PA1},
             gpiob::{PB4, PB10},
@@ -17,7 +19,8 @@ mod app {
         },
         timer::{monotonic::MonoTimer, Timer},
         pwm::{PwmChannel, C1},
-        qei::Qei
+        qei::Qei,
+        serial, serial::Serial
     };
 
     use pid::Pid;
@@ -54,10 +57,12 @@ mod app {
 
         pub type WheelT = Wheel<_motor::Motor, _encoder::Encoder>;
     }
+    type SerialT = serial::Tx<USART2>;
 
     #[shared]
     struct Shared {
         wheel: left_wheel::WheelT,
+        serial: SerialT
     }
 
     #[local]
@@ -88,6 +93,9 @@ mod app {
         let gpioa = ctx.device.GPIOA.split();
         let gpiob = ctx.device.GPIOB.split();
 
+        let tx_pin = gpioa.pa2.into_alternate();
+        let serial = Serial::tx(ctx.device.USART2, tx_pin, 115200.bps(), &clocks).unwrap();
+
         let (in_1, in_2) = (gpiob.pb10.into_push_pull_output(), gpiob.pb4.into_push_pull_output());
         let en_pin = gpioa.pa8.into_alternate();
         let en_pwm = Timer::new(ctx.device.TIM1, &clocks).pwm(en_pin, 2.khz());
@@ -112,15 +120,30 @@ mod app {
         let mono = Timer::new(ctx.device.TIM2, &clocks).monotonic();
 
         updater::spawn().ok();
+        printer::spawn().ok();
 
         (
             Shared {
-                wheel
+                wheel,
+                serial
             },
             Local {
             },
             init::Monotonics(mono),
         )
+    }
+
+    #[task(shared = [serial, wheel])]
+    fn printer(mut cx: printer::Context){
+        let serial = cx.shared.serial;
+        let wheel = cx.shared.wheel;
+
+        (serial, wheel).lock(|serial, wheel| {
+            let speed = wheel.get_speed();
+            writeln!(serial, "{}", speed).unwrap();
+        });
+
+        printer::spawn_after(100.millis()).ok();
     }
 
     #[task(shared = [wheel])]
