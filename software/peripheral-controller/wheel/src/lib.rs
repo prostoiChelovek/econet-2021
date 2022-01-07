@@ -92,6 +92,6 @@ where
     type Speed = f32;
 
     fn get_speed(&mut self) -> Self::Speed {
-        self.encoder.get_velocity()
+        self.velocity_to_percent(self.encoder.get_velocity())
     }
 }
