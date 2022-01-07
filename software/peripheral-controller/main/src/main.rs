@@ -101,11 +101,11 @@ mod app {
         let qei = Qei::new(encoder_timer, encoder_pins);
         let encoder = RotaryEncoder::new(qei, 1440_f32);
 
-        let pid = Pid::new(10.0, 10.0, 10.0,
+        let pid = Pid::new(100.0, 0.0, 0.0,
                            100.0, 100.0, 100.0,
                            100.0,
                            0.0);
-        let mut wheel = Wheel::new(motor, encoder, pid);
+        let mut wheel = Wheel::new(motor, encoder, pid, 100.0 / 60.0);
 
         wheel.set_speed(1.0);
 

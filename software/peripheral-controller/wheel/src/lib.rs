@@ -18,6 +18,8 @@ where
     encoder: E,
 
     pid: Pid<f32>,
+
+    pub max_speed: f32,
 }
 
 impl<S, E> Wheel<S, E>
@@ -25,13 +27,19 @@ where
     S: SetSpeed + GetSpeed,
     E: Encoder
 {
-    pub fn new(speed_controller: S, encoder: E, pid: Pid<f32>) -> Self {
+    pub fn new(speed_controller: S, encoder: E, pid: Pid<f32>, max_speed_rps: f32) -> Self {
         Self {
             speed: speed_controller,
             encoder,
 
             pid,
+
+            max_speed: max_speed_rps,
         }
+    }
+
+    fn velocity_to_percent(&self, vel: f32) -> f32 {
+        vel / self.max_speed * 100.0
     }
 }
 
@@ -53,6 +61,7 @@ where
         self.encoder.update(time_delta_seconds);
 
         let velocity = -self.encoder.get_velocity();
+        let velocity = self.velocity_to_percent(velocity);
 
         let control = self.pid.next_control_output(velocity).output;
         let current_speed: f32 = NumCast::from(self.speed.get_speed()).unwrap();
@@ -71,7 +80,7 @@ where
     type Speed = f32;
 
     fn set_speed(&mut self, speed: Self::Speed) {
-        self.pid.setpoint = speed;
+        self.pid.setpoint = self.velocity_to_percent(speed);
     }
 }
 
