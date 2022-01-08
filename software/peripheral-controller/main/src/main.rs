@@ -115,7 +115,7 @@ mod app {
                            100.0, 100.0, 100.0,
                            100.0,
                            0.0);
-        let mut wheel = Wheel::new(motor, encoder, pid, 1.4);
+        let wheel = Wheel::new(motor, encoder, pid, 1.4);
 
         let mono = Timer::new(ctx.device.TIM2, &clocks).monotonic();
 
@@ -136,14 +136,13 @@ mod app {
     }
 
     #[task(shared = [serial, wheel])]
-    fn printer(mut cx: printer::Context){
+    fn printer(cx: printer::Context){
         let serial = cx.shared.serial;
         let wheel = cx.shared.wheel;
 
         (serial, wheel).lock(|serial, wheel| {
             let target_speed = wheel.get_target_speed();
             let speed = wheel.get_speed();
-            let error = target_speed - speed;
             writeln!(serial, "{} {}", target_speed, speed).unwrap();
         });
 
