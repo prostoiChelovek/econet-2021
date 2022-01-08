@@ -41,6 +41,10 @@ where
     fn velocity_to_percent(&self, vel: f32) -> f32 {
         vel / self.max_speed * 100.0
     }
+
+    pub fn get_target_speed(&self) -> f32 {
+        self.pid.setpoint
+    }
 }
 
 // TODO: it is kinda incorrect to use encoder's Update here, but it'll do for now
