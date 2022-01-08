@@ -115,7 +115,7 @@ mod app {
                            100.0, 100.0, 100.0,
                            100.0,
                            0.0);
-        let mut wheel = Wheel::new(motor, encoder, pid, 100.0 / 60.0);
+        let mut wheel = Wheel::new(motor, encoder, pid, 1.4);
 
         wheel.set_speed(1.0);
 
