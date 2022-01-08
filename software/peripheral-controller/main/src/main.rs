@@ -66,7 +66,9 @@ mod app {
     }
 
     #[local]
-    struct Local { }
+    struct Local {
+        i: f32
+    }
 
     #[init]
     fn init(ctx: init::Context) -> (Shared, Local, init::Monotonics) {
@@ -120,6 +122,7 @@ mod app {
         let mono = Timer::new(ctx.device.TIM2, &clocks).monotonic();
 
         updater::spawn().ok();
+        speed_updater::spawn().ok();
         printer::spawn().ok();
 
         (
@@ -128,6 +131,7 @@ mod app {
                 serial
             },
             Local {
+                i: 0.0
             },
             init::Monotonics(mono),
         )
@@ -139,11 +143,27 @@ mod app {
         let wheel = cx.shared.wheel;
 
         (serial, wheel).lock(|serial, wheel| {
+            let target_speed = wheel.get_target_speed();
             let speed = wheel.get_speed();
-            writeln!(serial, "{}", speed).unwrap();
+            let error = target_speed - speed;
+            writeln!(serial, "{} {}", target_speed, speed).unwrap();
         });
 
         printer::spawn_after(100.millis()).ok();
+    }
+
+    #[task(shared = [wheel], local = [i])]
+    fn speed_updater(mut cx: speed_updater::Context) {
+        let i = cx.local.i;
+        let new_speed = 1.4_f32 * (*i);
+        *i += 0.1;
+        if *i >= 1.0 { *i = 0.0; }
+
+        cx.shared.wheel.lock(|wheel| {
+            wheel.set_speed(new_speed);
+        });
+
+        speed_updater::spawn_after(2000.millis()).ok();
     }
 
     #[task(shared = [wheel])]
