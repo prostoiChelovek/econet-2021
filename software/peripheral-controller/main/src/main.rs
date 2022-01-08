@@ -111,13 +111,11 @@ mod app {
         let qei = Qei::new(encoder_timer, encoder_pins);
         let encoder = RotaryEncoder::new(qei, 1440_f32);
 
-        let pid = Pid::new(100.0, 0.0, 0.0,
+        let pid = Pid::new(0.25, 0.02, 1.0, // 0.25, 0.01, 0.25
                            100.0, 100.0, 100.0,
                            100.0,
                            0.0);
         let mut wheel = Wheel::new(motor, encoder, pid, 1.4);
-
-        wheel.set_speed(1.0);
 
         let mono = Timer::new(ctx.device.TIM2, &clocks).monotonic();
 
