@@ -149,7 +149,7 @@ mod app {
             writeln!(serial, "{} {}", target_speed, speed).unwrap();
         });
 
-        printer::spawn_after(100.millis()).ok();
+        printer::spawn_after(25.millis()).ok();
     }
 
     #[task(shared = [wheel], local = [i])]
@@ -168,12 +168,12 @@ mod app {
 
     #[task(shared = [wheel])]
     fn updater(mut cx: updater::Context) {
-        const TIME_DELTA_SECONDS: f32 = 0.1;
+        const TIME_DELTA_SECONDS: f32 = 0.025;
 
         cx.shared.wheel.lock(|wheel| {
             wheel.update(TIME_DELTA_SECONDS);
         });
 
-        updater::spawn_after(100.millis()).ok();
+        updater::spawn_after(25.millis()).ok();
     }
 }
