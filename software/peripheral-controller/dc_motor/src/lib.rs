@@ -47,9 +47,9 @@ where
     type Speed = u8;
 
     fn set_speed(&mut self, speed: Self::Speed) {
+        self.current_speed = speed.min(100);
         let speed = speed + self.min_speed;
         let speed = speed.max(0).min(100);
-        self.current_speed = speed;
         let speed: f32 = speed.into();
 
         let max_duty: f32 = self.pin.get_max_duty().into();
