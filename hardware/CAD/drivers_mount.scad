@@ -91,33 +91,52 @@ function driver_pos(num) = [
         (side_length + vertical_spacing) * driver_grid_pos(num).y
      ];
 
+module vertical_birdges() {
+    for (col = [0:1:2]) {
+        for (hole_n = [0:1:1]) {
+            translate(driver_pos(col))
+                translate([hole_side_distance, hole_side_distance, 0])
+                translate([holes_distance * hole_n, holes_distance, 0])
+                circles_bridge(hole_diam, vertical_spacing + hole_diam + hole_side_distance, 0);
+        }
+    }
+}
+
+module horizontal_bridges() {
+    for (num = [0:1:num_dirvers - 1]) {
+        grid_pos = driver_grid_pos(num);
+        if (!( // skip rightmost mounts
+                    (grid_pos.y == 0 && grid_pos.x == 2) ||
+                    (grid_pos.y == 1 && grid_pos.x == 1)
+             )) {
+            for (hole_n = [0:1:1]) {
+                translate(driver_pos(num)) {
+                    translate([hole_side_distance, hole_side_distance, 0])
+                        translate([holes_distance, holes_distance * hole_n, 0])
+                        circles_bridge(hole_diam, horizontal_spacing + hole_diam + hole_side_distance, -1);
+                };
+            }
+        }
+    }
+}
+
+module bridges() {
+    vertical_birdges();
+    horizontal_bridges();
+}
+
+module last_bar() {
+    translate(driver_pos(4))
+        translate([hole_side_distance, hole_side_distance, 0])
+        translate([holes_distance, 0, 0])
+        circles_bridge(hole_diam, side_length + hole_diam * 2 + wall_thickness * 3 - wall_thickness / 2 + tolerance, -1);
+}
+
 for (num = [0:1:num_dirvers - 1]) {
     translate(driver_pos(num))
         single_mount();
 }
 
-for (col = [0:1:2]) {
-    for (hole_n = [0:1:1]) {
-        translate(driver_pos(col))
-            translate([hole_side_distance, hole_side_distance, 0])
-                translate([holes_distance * hole_n, holes_distance, 0])
-                    circles_bridge(hole_diam, vertical_spacing + hole_diam + hole_side_distance, 0);
-    }
-}
-
-for (num = [0:1:num_dirvers - 1]) {
-    grid_pos = driver_grid_pos(num);
-    if (!( // skip rightmost mounts
-        (grid_pos.y == 0 && grid_pos.x == 2) ||
-        (grid_pos.y == 1 && grid_pos.x == 1)
-        )) {
-        for (hole_n = [0:1:1]) {
-            translate(driver_pos(num)) {
-                translate([hole_side_distance, hole_side_distance, 0])
-                    translate([holes_distance, holes_distance * hole_n, 0])
-                    circles_bridge(hole_diam, horizontal_spacing + hole_diam + hole_side_distance, -1);
-            };
-        }
-    }
-}
+bridges();
+last_bar();
 
