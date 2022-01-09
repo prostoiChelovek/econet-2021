@@ -6,6 +6,10 @@ mount_thickness = 4;
 wall_thickness = 2.6;
 mount_height = 30;
 
+guide_wall_width = 1.6;
+guide_wall_height = 2;
+wire_gap_witdh = 1.2 + tolerance;
+
 side_length = 43.5;
 hole_diam = 3 + tolerance;
 holes_distance = 40 - hole_diam;
@@ -132,6 +136,31 @@ module last_bar() {
         circles_bridge(hole_diam, side_length + hole_diam * 2 + wall_thickness * 3 - wall_thickness / 2 + tolerance, -1);
 }
 
+module wire_guide() {
+    total_guide_wall_width = guide_wall_width * 3 + wire_gap_witdh * 2;
+    vertical_offset = (vertical_spacing - total_guide_wall_width) / 2;
+
+    translate([0, 0, mount_thickness])
+        translate([hole_side_distance, side_length, 0])
+            translate([0, vertical_offset + guide_wall_width / 2]) {
+                for (n = [0:1:2]) {
+                    translate([0, (wire_gap_witdh  + guide_wall_width) * n])
+                        cube(size = [mount_thickness, guide_wall_width, guide_wall_height * 2], center = true);
+                }
+            };
+}
+
+module wire_guies() {
+    for (num = [0:1:cols - 1]) {
+        translate(driver_pos(num)) {
+            for (j = [0:1:1]) {
+                translate([holes_distance * j, 0])
+                    wire_guide();
+            }
+        }
+    }
+}
+
 for (num = [0:1:num_dirvers - 1]) {
     translate(driver_pos(num))
         single_mount();
@@ -139,4 +168,5 @@ for (num = [0:1:num_dirvers - 1]) {
 
 bridges();
 last_bar();
+wire_guies();
 
