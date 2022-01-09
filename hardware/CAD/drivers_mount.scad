@@ -14,7 +14,6 @@ hole_side_distance = (side_length - holes_distance) / 2;
 horizontal_spacing = 10;
 vertical_spacing = 15;
 num_dirvers = 5;
-rows = 2;
 cols = 3;
 
 module circles_bridge_profile(diam, distance, direction = 1) {
@@ -86,14 +85,39 @@ module single_mount() {
     standoff_bridges();
 }
 
+function driver_grid_pos(num) = [ num % cols, floor(num / cols) ];
 function driver_pos(num) = [
-        (side_length + horizontal_spacing) * (num % cols),
-        (side_length + vertical_spacing) * floor(num / cols)
+        (side_length + horizontal_spacing) * driver_grid_pos(num).x,
+        (side_length + vertical_spacing) * driver_grid_pos(num).y
      ];
 
 for (num = [0:1:num_dirvers - 1]) {
-    translate(driver_pos(num)) {
+    translate(driver_pos(num))
         single_mount();
-    };
+}
+
+for (col = [0:1:2]) {
+    for (hole_n = [0:1:1]) {
+        translate(driver_pos(col))
+            translate([hole_side_distance, hole_side_distance, 0])
+                translate([holes_distance * hole_n, holes_distance, 0])
+                    circles_bridge(hole_diam, vertical_spacing + hole_diam + hole_side_distance, 0);
+    }
+}
+
+for (num = [0:1:num_dirvers - 1]) {
+    grid_pos = driver_grid_pos(num);
+    if (!( // skip rightmost mounts
+        (grid_pos.y == 0 && grid_pos.x == 2) ||
+        (grid_pos.y == 1 && grid_pos.x == 1)
+        )) {
+        for (hole_n = [0:1:1]) {
+            translate(driver_pos(num)) {
+                translate([hole_side_distance, hole_side_distance, 0])
+                    translate([holes_distance, holes_distance * hole_n, 0])
+                    circles_bridge(hole_diam, horizontal_spacing + hole_diam + hole_side_distance, -1);
+            };
+        }
+    }
 }
 
