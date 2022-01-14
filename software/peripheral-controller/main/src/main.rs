@@ -10,14 +10,24 @@ macro_rules! pin_type_name {
     };
 }
 
+macro_rules! get_pin {
+    ($ports:ident, $port:expr, $pin:expr) => (
+        crate::paste! { $ports. [<gpio $port:lower>] . [<p $port:lower $pin> ]}
+    )
+}
+
 macro_rules! wheel_alias {
     ($name:ident, 
      ($dir_1_port:ident, $dir_1_pin:literal), ($dir_2_port:ident, $dir_2_pin:literal),
      (($pwm_port:ident, $pwm_pin:literal), $pwm_timer:ident, $pwm_chan:ident),
-     ($qei_1_port:ident, $qei_1_pin:literal), ($qei_2_port:ident, $qei_2_pin:literal)) => {
+     ($qei_1_port:ident, $qei_1_pin:literal), ($qei_2_port:ident, $qei_2_pin:literal),
+     ($($used_ports:ident),*)) => {
         mod $name {
             use super::*;
-            use stm32f4xx_hal::{pac::Peripherals};
+            use stm32f4xx_hal;
+            use stm32f4xx_hal::pac::Peripherals;
+
+            use pins_create_generator::generate_pins_create;
 
             mod _motor {
                 use super::*;
@@ -39,6 +49,41 @@ macro_rules! wheel_alias {
             }
 
             pub type WheelT = Wheel<_motor::Motor, _encoder::Encoder>;
+
+            generate_pins_create!(($dir_1_port, $dir_1_pin));
+            pub(crate) use create_pins;
+
+            /*
+            crate::paste! {
+                pub fn create(device: &Peripherals, 
+                              $(
+                                  [<gpio $used_ports:lower>] : &mut stm32f4xx_hal::gpio:: [<gpio $used_ports:lower>] ::Parts,
+                                  )*
+                             ) -> () {
+                    //let a = crate::paste! { [<gpio $dir_1_port:lower>] . [<p $dir_1_port:lower $dir_1_pin> ]} .into_push_pull_output();
+                    /*
+                    //let (in_1, in_2) = [<(gpio $dir_1_port:lower .p $dir_1_port:lower $dir_1_pin .into_push_pull_output(), gpiob.pb4.into_push_pull_output())>];
+                    let en_pin = gpioa.pa8.into_alternate();
+                    let en_pwm = Timer::new(ctx.device.TIM1, &clocks).pwm(en_pin, 2.khz());
+
+                    let directin = TwoPinSetDirection::new(in_1, in_2);
+                    let speed = PwmSetSpeed::new(en_pwm, 25);
+                    let motor = Motor::new(directin, speed);
+
+                    let encoder_pins = (gpioa.pa0.into_alternate(), gpioa.pa1.into_alternate());
+                    let encoder_timer = ctx.device.TIM5;
+                    let qei = Qei::new(encoder_timer, encoder_pins);
+                    let encoder = RotaryEncoder::new(qei, 1440_f32);
+
+                    let pid = Pid::new(0.25, 0.02, 1.0, // 0.25, 0.01, 0.25
+                                       100.0, 100.0, 100.0,
+                                       100.0,
+                                       0.0);
+                    let wheel = Wheel::new(motor, encoder, pid, 1.4);
+                    */
+                }
+            }
+        */
         }
     };
 }
@@ -80,7 +125,8 @@ mod app {
     wheel_alias!(left_wheel,
                  (B, 10), (B, 4),
                  ((A, 3), TIM1, C1),
-                 (A, 0), (A, 1));
+                 (A, 0), (A, 1),
+                 (A, B));
 
     type SerialT = serial::Tx<USART2>;
 
@@ -141,6 +187,8 @@ mod app {
                            100.0,
                            0.0);
         let wheel = Wheel::new(motor, encoder, pid, 1.4);
+
+        left_wheel::create_pins!(gpioa);
 
         let mono = Timer::new(ctx.device.TIM2, &clocks).monotonic();
 
