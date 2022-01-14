@@ -11,7 +11,10 @@ macro_rules! pin_type_name {
 }
 
 macro_rules! wheel_alias {
-    ($name:ident, ($dir_1_port:ident, $dir_1_pin:literal), ($dir_2_port:ident, $dir_2_pin:literal), $pwm_timer:ident, $pwm_chan:ident, $qei_pin_1:ident, $qei_pin_2:ident) => {
+    ($name:ident, 
+     ($dir_1_port:ident, $dir_1_pin:literal), ($dir_2_port:ident, $dir_2_pin:literal),
+     (($pwm_port:ident, $pwm_pin:literal), $pwm_timer:ident, $pwm_chan:ident),
+     ($qei_1_port:ident, $qei_1_pin:literal), ($qei_2_port:ident, $qei_2_pin:literal)) => {
         mod $name {
             use super::*;
             use stm32f4xx_hal::{pac::Peripherals};
@@ -29,7 +32,9 @@ macro_rules! wheel_alias {
             mod _encoder {
                 use super::*;
 
-                type QeiT = Qei<TIM5, ($qei_pin_1<EncoderPinMode>, $qei_pin_2<EncoderPinMode>)>;
+                type Pin1T = pin_type_name!($qei_1_port, $qei_1_pin, EncoderPinMode);
+                type Pin2T = pin_type_name!($qei_2_port, $qei_2_pin, EncoderPinMode);
+                type QeiT = Qei<TIM5, (Pin1T, Pin2T)>;
                 pub type Encoder = RotaryEncoder<QeiT>;
             }
 
@@ -72,7 +77,10 @@ mod app {
      #[monotonic(binds = TIM2, default = true)]
     type MicrosecMono = MonoTimer<pac::TIM2, 1_000_000>;
 
-    wheel_alias!(left_wheel, (B, 10), (B, 4), TIM1, C1, PA0, PA1);
+    wheel_alias!(left_wheel,
+                 (B, 10), (B, 4),
+                 ((A, 3), TIM1, C1),
+                 (A, 0), (A, 1));
 
     type SerialT = serial::Tx<USART2>;
 
