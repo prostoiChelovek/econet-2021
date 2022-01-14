@@ -3,6 +3,31 @@
 
 use panic_probe as _;
 
+macro_rules! wheel_alias {
+    ($name:ident, $dir_1_pin:ident, $dir_2_pin:ident, $pwm_timer:ident, $pwm_chan:ident, $qei_pin_1:ident, $qei_pin_2:ident) => {
+        mod $name {
+            use super::*;
+
+            mod _motor {
+                use super::*;
+
+                type SetDirectionT = TwoPinSetDirection<$dir_1_pin<OutPP>, $dir_2_pin<OutPP>>;
+                type SetSpeedT = PwmSetSpeed<PwmChannel<$pwm_timer, $pwm_chan>>;
+                pub type Motor = motor::Motor<SetDirectionT, SetSpeedT>;
+            }
+
+            mod _encoder {
+                use super::*;
+
+                type QeiT = Qei<TIM5, ($qei_pin_1<EncoderPinMode>, $qei_pin_2<EncoderPinMode>)>;
+                pub type Encoder = RotaryEncoder<QeiT>;
+            }
+
+            pub type WheelT = Wheel<_motor::Motor, _encoder::Encoder>;
+        }
+    };
+}
+
 #[rtic::app(device = stm32f4xx_hal::pac, peripherals = true, dispatchers = [USART1])]
 mod app {
     use core::fmt::Write;
@@ -37,26 +62,8 @@ mod app {
      #[monotonic(binds = TIM2, default = true)]
     type MicrosecMono = MonoTimer<pac::TIM2, 1_000_000>;
 
-    mod left_wheel {
-        use super::*;
+    wheel_alias!(left_wheel, PB10, PB4, TIM1, C1, PA0, PA1);
 
-        mod _motor {
-            use super::*;
-
-            type SetDirectionT = TwoPinSetDirection<PB10<OutPP>, PB4<OutPP>>;
-            type SetSpeedT = PwmSetSpeed<PwmChannel<TIM1, C1>>;
-            pub type Motor = motor::Motor<SetDirectionT, SetSpeedT>;
-        }
-
-        mod _encoder {
-            use super::*;
-
-            type QeiT = Qei<TIM5, (PA0<EncoderPinMode>, PA1<EncoderPinMode>)>;
-            pub type Encoder = RotaryEncoder<QeiT>;
-        }
-
-        pub type WheelT = Wheel<_motor::Motor, _encoder::Encoder>;
-    }
     type SerialT = serial::Tx<USART2>;
 
     #[shared]
