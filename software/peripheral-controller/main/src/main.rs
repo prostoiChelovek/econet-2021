@@ -2,39 +2,16 @@
 #![no_std]
 
 use panic_probe as _;
-use paste::paste;
-
-macro_rules! pin_type_name {
-    ($port:expr, $pin:expr, $T:expr) => {
-        crate::paste!{[<P $port:upper $pin  >] <$T>}
-    };
-}
-
-macro_rules! get_pin {
-    ($ports:ident, $port:expr, $pin:expr) => (
-        crate::paste! { $ports. [<gpio $port:lower>] . [<p $port:lower $pin> ]}
-    )
-}
 
 macro_rules! wheel_alias {
-    ($name:ident, 
-     ($dir_1_port:ident, $dir_1_pin:literal), ($dir_2_port:ident, $dir_2_pin:literal),
-     (($pwm_port:ident, $pwm_pin:literal), $pwm_timer:ident, $pwm_chan:ident),
-     ($qei_1_port:ident, $qei_1_pin:literal), ($qei_2_port:ident, $qei_2_pin:literal),
-     ($($used_ports:ident),*)) => {
+    ($name:ident, $dir_1_pin:ident, $dir_2_pin:ident, $pwm_timer:ident, $pwm_chan:ident, $qei_pin_1:ident, $qei_pin_2:ident) => {
         mod $name {
             use super::*;
-            use stm32f4xx_hal;
-            use stm32f4xx_hal::pac::Peripherals;
-
-            use pins_create_generator::generate_pins_create;
 
             mod _motor {
                 use super::*;
 
-                type Dir1T = pin_type_name!($dir_1_port, $dir_1_pin, OutPP);
-                type Dir2T = pin_type_name!($dir_2_port, $dir_2_pin, OutPP);
-                type SetDirectionT = TwoPinSetDirection<Dir1T, Dir2T>;
+                type SetDirectionT = TwoPinSetDirection<$dir_1_pin<OutPP>, $dir_2_pin<OutPP>>;
                 type SetSpeedT = PwmSetSpeed<PwmChannel<$pwm_timer, $pwm_chan>>;
                 pub type Motor = motor::Motor<SetDirectionT, SetSpeedT>;
             }
@@ -42,48 +19,11 @@ macro_rules! wheel_alias {
             mod _encoder {
                 use super::*;
 
-                type Pin1T = pin_type_name!($qei_1_port, $qei_1_pin, EncoderPinMode);
-                type Pin2T = pin_type_name!($qei_2_port, $qei_2_pin, EncoderPinMode);
-                type QeiT = Qei<TIM5, (Pin1T, Pin2T)>;
+                type QeiT = Qei<TIM5, ($qei_pin_1<EncoderPinMode>, $qei_pin_2<EncoderPinMode>)>;
                 pub type Encoder = RotaryEncoder<QeiT>;
             }
 
             pub type WheelT = Wheel<_motor::Motor, _encoder::Encoder>;
-
-            generate_pins_create!(($dir_1_port, $dir_1_pin));
-            pub(crate) use create_pins;
-
-            /*
-            crate::paste! {
-                pub fn create(device: &Peripherals, 
-                              $(
-                                  [<gpio $used_ports:lower>] : &mut stm32f4xx_hal::gpio:: [<gpio $used_ports:lower>] ::Parts,
-                                  )*
-                             ) -> () {
-                    //let a = crate::paste! { [<gpio $dir_1_port:lower>] . [<p $dir_1_port:lower $dir_1_pin> ]} .into_push_pull_output();
-                    /*
-                    //let (in_1, in_2) = [<(gpio $dir_1_port:lower .p $dir_1_port:lower $dir_1_pin .into_push_pull_output(), gpiob.pb4.into_push_pull_output())>];
-                    let en_pin = gpioa.pa8.into_alternate();
-                    let en_pwm = Timer::new(ctx.device.TIM1, &clocks).pwm(en_pin, 2.khz());
-
-                    let directin = TwoPinSetDirection::new(in_1, in_2);
-                    let speed = PwmSetSpeed::new(en_pwm, 25);
-                    let motor = Motor::new(directin, speed);
-
-                    let encoder_pins = (gpioa.pa0.into_alternate(), gpioa.pa1.into_alternate());
-                    let encoder_timer = ctx.device.TIM5;
-                    let qei = Qei::new(encoder_timer, encoder_pins);
-                    let encoder = RotaryEncoder::new(qei, 1440_f32);
-
-                    let pid = Pid::new(0.25, 0.02, 1.0, // 0.25, 0.01, 0.25
-                                       100.0, 100.0, 100.0,
-                                       100.0,
-                                       0.0);
-                    let wheel = Wheel::new(motor, encoder, pid, 1.4);
-                    */
-                }
-            }
-        */
         }
     };
 }
@@ -122,11 +62,7 @@ mod app {
      #[monotonic(binds = TIM2, default = true)]
     type MicrosecMono = MonoTimer<pac::TIM2, 1_000_000>;
 
-    wheel_alias!(left_wheel,
-                 (B, 10), (B, 4),
-                 ((A, 3), TIM1, C1),
-                 (A, 0), (A, 1),
-                 (A, B));
+    wheel_alias!(left_wheel, PB10, PB4, TIM1, C1, PA0, PA1);
 
     type SerialT = serial::Tx<USART2>;
 
@@ -187,8 +123,6 @@ mod app {
                            100.0,
                            0.0);
         let wheel = Wheel::new(motor, encoder, pid, 1.4);
-
-        left_wheel::create_pins!(gpioa);
 
         let mono = Timer::new(ctx.device.TIM2, &clocks).monotonic();
 

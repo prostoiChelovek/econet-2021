@@ -26,10 +26,6 @@ rtic-monotonic = { version = "1.0" }
 
 pid = "3.0.0"
 
-paste = "1.0.6"
-
-pins_create_generator = { path = "../pins_create_generator" }
-
 motor = { path = "../motor" }
 dc_motor = { path = "../dc_motor" }
 encoder = { path = "../encoder" }
