@@ -26,6 +26,8 @@ rtic-monotonic = { version = "1.0" }
 
 pid = "3.0.0"
 
+paste = "1.0.6"
+
 motor = { path = "../motor" }
 dc_motor = { path = "../dc_motor" }
 encoder = { path = "../encoder" }

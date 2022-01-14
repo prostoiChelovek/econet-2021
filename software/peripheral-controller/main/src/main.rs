@@ -2,16 +2,26 @@
 #![no_std]
 
 use panic_probe as _;
+use paste::paste;
+
+macro_rules! pin_type_name {
+    ($port:expr, $pin:expr, $T:expr) => {
+        crate::paste!{[<P $port:upper $pin  >] <$T>}
+    };
+}
 
 macro_rules! wheel_alias {
-    ($name:ident, $dir_1_pin:ident, $dir_2_pin:ident, $pwm_timer:ident, $pwm_chan:ident, $qei_pin_1:ident, $qei_pin_2:ident) => {
+    ($name:ident, ($dir_1_port:ident, $dir_1_pin:literal), ($dir_2_port:ident, $dir_2_pin:literal), $pwm_timer:ident, $pwm_chan:ident, $qei_pin_1:ident, $qei_pin_2:ident) => {
         mod $name {
             use super::*;
+            use stm32f4xx_hal::{pac::Peripherals};
 
             mod _motor {
                 use super::*;
 
-                type SetDirectionT = TwoPinSetDirection<$dir_1_pin<OutPP>, $dir_2_pin<OutPP>>;
+                type Dir1T = pin_type_name!($dir_1_port, $dir_1_pin, OutPP);
+                type Dir2T = pin_type_name!($dir_2_port, $dir_2_pin, OutPP);
+                type SetDirectionT = TwoPinSetDirection<Dir1T, Dir2T>;
                 type SetSpeedT = PwmSetSpeed<PwmChannel<$pwm_timer, $pwm_chan>>;
                 pub type Motor = motor::Motor<SetDirectionT, SetSpeedT>;
             }
@@ -62,7 +72,7 @@ mod app {
      #[monotonic(binds = TIM2, default = true)]
     type MicrosecMono = MonoTimer<pac::TIM2, 1_000_000>;
 
-    wheel_alias!(left_wheel, PB10, PB4, TIM1, C1, PA0, PA1);
+    wheel_alias!(left_wheel, (B, 10), (B, 4), TIM1, C1, PA0, PA1);
 
     type SerialT = serial::Tx<USART2>;
 
