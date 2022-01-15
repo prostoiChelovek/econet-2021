@@ -37,14 +37,15 @@ mod app {
 
     use stm32f4xx_hal::{
         prelude::*,
-        pac, pac::{TIM1, TIM5, USART2},
+        pac, pac::{TIM1, TIM3, TIM5, USART2},
         gpio::{
             gpioa::{PA0, PA1},
-            gpiob::{PB4, PB10},
+            gpiob::{PB3, PB4, PB5, PB10, PB6},
+            gpioc::PC7,
             Output, PushPull, Alternate
         },
         timer::{monotonic::MonoTimer, Timer},
-        pwm::{PwmChannel, C1},
+        pwm::{PwmChannel, C1, C2},
         qei::Qei,
         serial, serial::Serial
     };
@@ -62,7 +63,8 @@ mod app {
      #[monotonic(binds = TIM2, default = true)]
     type MicrosecMono = MonoTimer<pac::TIM2, 1_000_000>;
 
-    wheel_alias!(left_wheel, PB10, PB4, TIM1, C1, PA0, PA1, TIM5, 2_u8);
+    wheel_alias!(left_wheel, PB10, PB3, TIM1, C1, PB4, PB5, TIM3, 2_u8);
+    wheel_alias!(right_wheel, PC7, PB6, TIM1, C2, PA0, PA1, TIM5, 2_u8);
 
     type SerialT = serial::Tx<USART2>;
 
@@ -101,28 +103,54 @@ mod app {
 
         let gpioa = ctx.device.GPIOA.split();
         let gpiob = ctx.device.GPIOB.split();
+        let gpioc = ctx.device.GPIOC.split();
 
         let tx_pin = gpioa.pa2.into_alternate();
         let serial = Serial::tx(ctx.device.USART2, tx_pin, 115200.bps(), &clocks).unwrap();
 
-        let (in_1, in_2) = (gpiob.pb10.into_push_pull_output(), gpiob.pb4.into_push_pull_output());
-        let en_pin = gpioa.pa8.into_alternate();
-        let en_pwm = Timer::new(ctx.device.TIM1, &clocks).pwm(en_pin, 2.khz());
+        let en_pins = (gpioa.pa8.into_alternate(), gpioa.pa9.into_alternate());
+        let en_pwms = Timer::new(ctx.device.TIM1, &clocks).pwm(en_pins, 2.khz());
+        let (left_en_pwm, right_en_pwm) = en_pwms;
 
-        let directin = TwoPinSetDirection::new(in_1, in_2);
-        let speed = PwmSetSpeed::new(en_pwm, 25);
-        let motor = Motor::new(directin, speed);
+        let left_wheel = {
+            let (in_1, in_2) = (gpiob.pb10.into_push_pull_output(), gpiob.pb3.into_push_pull_output());
 
-        let encoder_pins = (gpioa.pa0.into_alternate(), gpioa.pa1.into_alternate());
-        let encoder_timer = ctx.device.TIM5;
-        let qei = Qei::new(encoder_timer, encoder_pins);
-        let encoder = RotaryEncoder::new(qei, 1440_f32);
+            let directin = TwoPinSetDirection::new(in_1, in_2);
+            let speed = PwmSetSpeed::new(left_en_pwm, 25);
+            let motor = Motor::new(directin, speed);
 
-        let pid = Pid::new(0.25, 0.02, 1.0, // 0.25, 0.01, 0.25
-                           100.0, 100.0, 100.0,
-                           100.0,
-                           0.0);
-        let wheel = Wheel::new(motor, encoder, pid, 1.4);
+            let encoder_pins = (gpiob.pb4.into_alternate(), gpiob.pb5.into_alternate());
+            let encoder_timer = ctx.device.TIM3;
+            let qei = Qei::new(encoder_timer, encoder_pins);
+            let encoder = RotaryEncoder::new(qei, 1440_f32);
+
+            let pid = Pid::new(0.25, 0.02, 1.0, // 0.25, 0.01, 0.25
+                               100.0, 100.0, 100.0,
+                               100.0,
+                               0.0);
+
+            Wheel::new(motor, encoder, pid, 1.4)
+        };
+
+        let right_wheel = {
+            let (in_1, in_2) = (gpioc.pc7.into_push_pull_output(), gpiob.pb6.into_push_pull_output());
+
+            let directin = TwoPinSetDirection::new(in_1, in_2);
+            let speed = PwmSetSpeed::new(right_en_pwm, 25);
+            let motor = Motor::new(directin, speed);
+
+            let encoder_pins = (gpioa.pa0.into_alternate(), gpioa.pa1.into_alternate());
+            let encoder_timer = ctx.device.TIM5;
+            let qei = Qei::new(encoder_timer, encoder_pins);
+            let encoder = RotaryEncoder::new(qei, 1440_f32);
+
+            let pid = Pid::new(0.25, 0.02, 1.0, // 0.25, 0.01, 0.25
+                               100.0, 100.0, 100.0,
+                               100.0,
+                               0.0);
+
+            Wheel::new(motor, encoder, pid, 1.4)
+        };
 
         let mono = Timer::new(ctx.device.TIM2, &clocks).monotonic();
 
@@ -132,7 +160,7 @@ mod app {
 
         (
             Shared {
-                wheel,
+                wheel: left_wheel,
                 serial
             },
             Local {
