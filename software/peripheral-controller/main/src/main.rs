@@ -70,7 +70,8 @@ mod app {
 
     #[shared]
     struct Shared {
-        wheel: left_wheel::WheelT,
+        left_wheel: left_wheel::WheelT,
+        right_wheel: right_wheel::WheelT,
         serial: SerialT
     }
 
@@ -160,7 +161,8 @@ mod app {
 
         (
             Shared {
-                wheel: left_wheel,
+                left_wheel,
+                right_wheel,
                 serial
             },
             Local {
@@ -170,40 +172,45 @@ mod app {
         )
     }
 
-    #[task(shared = [serial, wheel])]
+    #[task(shared = [serial, left_wheel, right_wheel])]
     fn printer(cx: printer::Context){
         let serial = cx.shared.serial;
-        let wheel = cx.shared.wheel;
+        let left_wheel = cx.shared.left_wheel;
+        let right_wheel = cx.shared.right_wheel;
 
-        (serial, wheel).lock(|serial, wheel| {
-            let target_speed = wheel.get_target_speed();
-            let speed = wheel.get_speed();
-            writeln!(serial, "{} {}", target_speed, speed).unwrap();
+        (serial, left_wheel, right_wheel).lock(|serial, left_wheel, right_wheel| {
+            let target_speed = left_wheel.get_target_speed();
+            let speed = (left_wheel.get_speed(), right_wheel.get_speed());
+            rprintln!("{:?}", speed);
+            writeln!(serial, "{} {} {}", target_speed, speed.0, speed.1).unwrap();
         });
 
         printer::spawn_after(25.millis()).ok();
     }
 
-    #[task(shared = [wheel], local = [i])]
+    #[task(shared = [left_wheel], local = [i])]
     fn speed_updater(mut cx: speed_updater::Context) {
         let i = cx.local.i;
         let new_speed = 1.4_f32 * (*i);
         *i += 0.1;
         if *i >= 1.0 { *i = 0.0; }
 
-        cx.shared.wheel.lock(|wheel| {
-            wheel.set_speed(new_speed);
+        cx.shared.left_wheel.lock(|left_wheel| {
+            left_wheel.set_speed(new_speed);
         });
 
         speed_updater::spawn_after(2000.millis()).ok();
     }
 
-    #[task(shared = [wheel])]
+    #[task(shared = [left_wheel, right_wheel])]
     fn updater(mut cx: updater::Context) {
         const TIME_DELTA_SECONDS: f32 = 0.025;
 
-        cx.shared.wheel.lock(|wheel| {
-            wheel.update(TIME_DELTA_SECONDS);
+        cx.shared.left_wheel.lock(|left_wheel| {
+            left_wheel.update(TIME_DELTA_SECONDS);
+        });
+        cx.shared.right_wheel.lock(|right_wheel| {
+            right_wheel.update(TIME_DELTA_SECONDS);
         });
 
         updater::spawn_after(25.millis()).ok();
