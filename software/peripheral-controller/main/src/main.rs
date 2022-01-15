@@ -4,7 +4,7 @@
 use panic_probe as _;
 
 macro_rules! wheel_alias {
-    ($name:ident, $dir_1_pin:ident, $dir_2_pin:ident, $pwm_timer:ident, $pwm_chan:ident, $qei_pin_1:ident, $qei_pin_2:ident) => {
+    ($name:ident, $dir_1_pin:ident, $dir_2_pin:ident, $pwm_timer:ident, $pwm_chan:ident, $qei_pin_1:ident, $qei_pin_2:ident, $qei_tim:ident, $qei_af:literal) => {
         mod $name {
             use super::*;
 
@@ -19,7 +19,8 @@ macro_rules! wheel_alias {
             mod _encoder {
                 use super::*;
 
-                type QeiT = Qei<TIM5, ($qei_pin_1<EncoderPinMode>, $qei_pin_2<EncoderPinMode>)>;
+                type EncoderPinMode = Alternate<PushPull, $qei_af>;
+                type QeiT = Qei<$qei_tim, ($qei_pin_1<EncoderPinMode>, $qei_pin_2<EncoderPinMode>)>;
                 pub type Encoder = RotaryEncoder<QeiT>;
             }
 
@@ -57,12 +58,11 @@ mod app {
     use wheel::Wheel;
 
     type OutPP = Output<PushPull>;
-    type EncoderPinMode = Alternate<PushPull, 2_u8>;
 
      #[monotonic(binds = TIM2, default = true)]
     type MicrosecMono = MonoTimer<pac::TIM2, 1_000_000>;
 
-    wheel_alias!(left_wheel, PB10, PB4, TIM1, C1, PA0, PA1);
+    wheel_alias!(left_wheel, PB10, PB4, TIM1, C1, PA0, PA1, TIM5, 2_u8);
 
     type SerialT = serial::Tx<USART2>;
 
