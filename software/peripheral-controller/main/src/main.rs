@@ -55,12 +55,13 @@ mod app {
 
     use pid::Pid;
 
-    use motor::{Motor, SetSpeed, GetSpeed};
+    use motor::{Motor, SetSpeed};
     use dc_motor::{TwoPinSetDirection, PwmSetSpeed};
     use encoder::*;
     use rotary_encoder::RotaryEncoder;
     use wheel::Wheel;
-    use servo::{Servo, SetPosition};
+    use servo::Servo;
+    use chassis::{chassis::{Chassis, ChassisPosition, ChassisSpeed}, movement_controller::{MovementController, MoveRelative}};
 
     type OutPP = Output<PushPull>;
 
@@ -80,10 +81,15 @@ mod app {
     const SERVO_MAX_DISTANCE: f32 = 20_00.0;
     const SERVO_MAX_TARRGET_DISTANCE: f32 = 1.0;
 
+    const WHEELS_DISTANCE: f32 = 17.0;
+
     #[shared]
     struct Shared {
-        left_wheel: Servo<left_wheel::MotorT, left_wheel::EncoderT>,
-        right_wheel: Servo<right_wheel::MotorT, right_wheel::EncoderT>,
+        chassis: MovementController<
+            Chassis<
+                Servo<left_wheel::MotorT, left_wheel::EncoderT>,
+                Servo<right_wheel::MotorT, right_wheel::EncoderT>
+            >>,
         serial: SerialT
     }
 
@@ -121,7 +127,7 @@ mod app {
         let tx_pin = gpioa.pa2.into_alternate();
         let serial = Serial::tx(ctx.device.USART2, tx_pin, 115200.bps(), &clocks).unwrap();
 
-        let (mut left_wheel, right_wheel) = {
+        let (left_wheel, right_wheel) = {
             let en_pins = (gpioa.pa8.into_alternate(), gpioa.pa9.into_alternate());
             let en_pwms = Timer::new(ctx.device.TIM1, &clocks).pwm(en_pins, 2.khz());
             let (left_en_pwm, right_en_pwm) = en_pwms;
@@ -169,7 +175,9 @@ mod app {
             })
         };
 
-        left_wheel.set_speed(50.0);
+        let chassis = Chassis::new(left_wheel, right_wheel, WHEELS_DISTANCE);
+        let mut chassis = MovementController::new(chassis);
+        chassis.set_speed(ChassisSpeed { linear: 45.0, angular: 60.0 } );
 
         let mono = Timer::new(ctx.device.TIM2, &clocks).monotonic();
 
@@ -179,9 +187,8 @@ mod app {
 
         (
             Shared {
-                left_wheel,
-                right_wheel,
-                serial
+                serial,
+                chassis
             },
             Local {
                 i: 0.0
@@ -190,46 +197,40 @@ mod app {
         )
     }
 
-    #[task(shared = [serial, left_wheel, right_wheel])]
+    #[task(shared = [serial, chassis])]
     fn printer(cx: printer::Context){
         let serial = cx.shared.serial;
-        let left_wheel = cx.shared.left_wheel;
-        let right_wheel = cx.shared.right_wheel;
+        let chassis = cx.shared.chassis;
 
-        (serial, left_wheel, right_wheel).lock(|serial, left_wheel, right_wheel| {
-            let speed = left_wheel.get_speed();
-            let target = left_wheel.get_target_position();
-            let position = left_wheel.get_position();
-            rprintln!("{} {} {}", speed, position, target);
-            writeln!(serial, "{} {} {}", target, position, speed).unwrap();
+        (serial, chassis).lock(|serial, chassis| {
+            let position = chassis.get_position();
+            rprintln!("{:?}", position);
+            writeln!(serial, "{} {} {}", position.linear.0, position.linear.1, position.angular).unwrap();
         });
 
         printer::spawn_after(25.millis()).ok();
     }
 
-    #[task(shared = [left_wheel], local = [i])]
+    #[task(shared = [chassis], local = [i])]
     fn position_updater(mut cx: position_updater::Context) {
         let i = cx.local.i;
-        let new_position = 20_00.0 * (*i);
+        let new_position = 360.0 * (*i);
         *i += 0.1;
         if *i >= 1.0 { *i = 0.0; }
 
-        cx.shared.left_wheel.lock(|left_wheel| {
-            left_wheel.set_position(new_position);
+        cx.shared.chassis.lock(|chassis| {
+            chassis.move_relative(ChassisPosition { linear: (0.0, 0.0), angular: new_position } );
         });
 
         position_updater::spawn_after(5_000.millis()).ok();
     }
 
-    #[task(shared = [left_wheel, right_wheel])]
+    #[task(shared = [chassis])]
     fn updater(mut cx: updater::Context) {
         const TIME_DELTA_SECONDS: f32 = 0.025;
 
-        cx.shared.left_wheel.lock(|left_wheel| {
-            left_wheel.update(TIME_DELTA_SECONDS);
-        });
-        cx.shared.right_wheel.lock(|right_wheel| {
-            right_wheel.update(TIME_DELTA_SECONDS);
+        cx.shared.chassis.lock(|chassis| {
+            chassis.update(TIME_DELTA_SECONDS);
         });
 
         updater::spawn_after(25.millis()).ok();

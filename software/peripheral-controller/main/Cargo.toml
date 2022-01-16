@@ -32,4 +32,5 @@ encoder = { path = "../encoder" }
 rotary_encoder = { path = "../rotary_encoder" }
 wheel = { path = "../wheel" }
 servo = { path = "../servo" }
+chassis = { path = "../chassis" }
 
