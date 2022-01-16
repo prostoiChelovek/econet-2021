@@ -5,6 +5,7 @@ members = [
     "encoder",
     "rotary_encoder",
     "wheel",
+    "wheel_position_controller",
     "main"
 ]
 

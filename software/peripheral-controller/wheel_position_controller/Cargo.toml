@@ -1,0 +1,15 @@
+[package]
+edition = "2021"
+name = "wheel_position_controller"
+version = "0.1.0"
+
+[dependencies]
+rtt-target = { version = "0.3.1", features = ["cortex-m"] }
+
+num-traits = { version = "0.2", default-features = false }
+pid = "3.0.0"
+
+motor = { path = "../motor" }
+encoder = { path = "../encoder" }
+wheel = { path = "../wheel" }
+
