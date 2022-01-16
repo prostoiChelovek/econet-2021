@@ -12,6 +12,7 @@ where
     qei: QEI,
 
     pub ppr: f32,
+    pub reverse: bool,
 
     // angular
     position: f32,
@@ -25,16 +26,25 @@ where
     QEI: Qei,
     QEI::Count: Into<i64>
 {
-    pub fn new(qei: QEI, pulse_per_rev: f32) -> Self {
+    pub fn new(qei: QEI, pulse_per_rev: f32, reverse: bool) -> Self {
         Self {
             qei,
 
             ppr: pulse_per_rev,
+            reverse,
 
             position: 0_f32,
             velocity: 0_f32,
 
             last_count: 0,
+        }
+    }
+
+    fn maybe_reverse(&self, val: f32) -> f32 {
+        if self.reverse {
+            val * -1.0
+        } else {
+            val
         }
     }
 }
@@ -64,7 +74,7 @@ where
     QEI::Count: Into<i64>
 {
     fn get_position(&self) -> f32 {
-        self.position
+        self.maybe_reverse(self.position)
     }
 }
 
@@ -74,7 +84,7 @@ where
     QEI::Count: Into<i64>
 {
     fn get_velocity(&self) -> f32 {
-        self.velocity
+        self.maybe_reverse(self.velocity)
     }
 }
 

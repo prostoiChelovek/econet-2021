@@ -125,7 +125,7 @@ mod app {
             let encoder_pins = (gpiob.pb4.into_alternate(), gpiob.pb5.into_alternate());
             let encoder_timer = ctx.device.TIM3;
             let qei = Qei::new(encoder_timer, encoder_pins);
-            let encoder = RotaryEncoder::new(qei, 1440_f32);
+            let encoder = RotaryEncoder::new(qei, 1440_f32, true);
 
             let pid = Pid::new(0.25, 0.02, 1.0, // 0.25, 0.01, 0.25
                                100.0, 100.0, 100.0,
@@ -145,7 +145,7 @@ mod app {
             let encoder_pins = (gpioa.pa0.into_alternate(), gpioa.pa1.into_alternate());
             let encoder_timer = ctx.device.TIM5;
             let qei = Qei::new(encoder_timer, encoder_pins);
-            let encoder = RotaryEncoder::new(qei, 1440_f32);
+            let encoder = RotaryEncoder::new(qei, 1440_f32, true);
 
             let pid = Pid::new(0.25, 0.02, 1.0, // 0.25, 0.01, 0.25
                                100.0, 100.0, 100.0,
