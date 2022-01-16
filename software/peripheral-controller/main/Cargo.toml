@@ -1,0 +1,36 @@
+[package]
+edition = "2021"
+name = "peripheral-controller"
+version = "0.1.0"
+
+[[bin]]
+name = "peripheral-controller"
+bench = false
+test = false
+
+[dependencies]
+nb = "1.0.0"
+cortex-m = "0.7"
+cortex-m-rt = "0.7"
+embedded-hal = { version = "0.2.6", features = ["unproven"] }
+
+panic-halt = "0.2.0"
+rtt-target = { version = "0.3.1", features = ["cortex-m"] }
+panic-rtt-target = { version = "0.1.2", features = ["cortex-m"] }
+panic-probe = { version = "0.2.0", features = ["print-rtt"] }
+fugit = "0.3.3"
+stm32f4xx-hal = { version = "0.11.1", features = ["rt", "stm32f401", "usb_fs", "rtic"] }
+
+cortex-m-rtic = "1.0.0"
+rtic-monotonic = { version = "1.0" }
+
+pid = "3.0.0"
+
+motor = { path = "../motor" }
+dc_motor = { path = "../dc_motor" }
+encoder = { path = "../encoder" }
+rotary_encoder = { path = "../rotary_encoder" }
+wheel = { path = "../wheel" }
+servo = { path = "../servo" }
+chassis = { path = "../chassis" }
+

@@ -15,11 +15,7 @@ chip_descriptions = []
 log_level = "WARN"
 
 [default.rtt]
-enabled = true
-# A list of channel associations to be displayed. If left empty, all channels are displayed.
-channels = [
-    # { up = 0, down = 0, name = "name" }
-]
+enabled = false
 timeout = 3000
 show_timestamps = true
 

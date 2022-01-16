@@ -1,29 +1,14 @@
-[package]
-edition = "2021"
-name = "peripheral-controller"
-version = "0.1.0"
-
-[[bin]]
-name = "peripheral-controller"
-bench = false
-test = false
-
-[dependencies]
-cortex-m = "^0.6.0"
-cortex-m-rt = "^0.6.8"
-cortex-m-semihosting = "0.3.7"
-embedded-hal = "0.2.6"
-nb = "1.0.0"
-nucleo-f401re = "0.4.1"
-panic-halt = "0.2.0"
-
-[dependencies.panic-rtt-target]
-features = ["cortex-m"]
-version = "0.1.2"
-
-[dependencies.rtt-target]
-features = ["cortex-m"]
-version = "0.3.1"
+[workspace]
+members = [
+    "motor",
+    "dc_motor",
+    "encoder",
+    "rotary_encoder",
+    "wheel",
+    "servo",
+    "chassis",
+    "main"
+]
 
 [profile.dev]
 debug = true
