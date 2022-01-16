@@ -164,12 +164,12 @@ mod app {
             })
         };
 
-        left_wheel.set_speed(20.0);
+        left_wheel.set_speed(50.0);
 
         let mono = Timer::new(ctx.device.TIM2, &clocks).monotonic();
 
         updater::spawn().ok();
-        speed_updater::spawn().ok();
+        position_updater::spawn().ok();
         printer::spawn().ok();
 
         (
@@ -203,17 +203,17 @@ mod app {
     }
 
     #[task(shared = [left_wheel], local = [i])]
-    fn speed_updater(mut cx: speed_updater::Context) {
+    fn position_updater(mut cx: position_updater::Context) {
         let i = cx.local.i;
-        let new_speed = 20_00.0 * (*i);
+        let new_position = 20_00.0 * (*i);
         *i += 0.1;
         if *i >= 1.0 { *i = 0.0; }
 
         cx.shared.left_wheel.lock(|left_wheel| {
-            left_wheel.set_position(100.0);
+            left_wheel.set_position(new_position);
         });
 
-        //speed_updater::spawn_after(2000.millis()).ok();
+        position_updater::spawn_after(5_000.millis()).ok();
     }
 
     #[task(shared = [left_wheel, right_wheel])]
