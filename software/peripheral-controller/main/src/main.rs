@@ -25,6 +25,9 @@ macro_rules! wheel_alias {
             }
 
             pub type WheelT = Wheel<_motor::Motor, _encoder::Encoder>;
+
+            pub use _motor::Motor as MotorT;
+            pub use _encoder::Encoder as EncoderT;
         }
     };
 }
@@ -57,6 +60,7 @@ mod app {
     use encoder::*;
     use rotary_encoder::RotaryEncoder;
     use wheel::Wheel;
+    use wheel_position_controller::{WheelPositionController, SetPosition};
 
     type OutPP = Output<PushPull>;
 
@@ -75,7 +79,7 @@ mod app {
 
     #[shared]
     struct Shared {
-        left_wheel: left_wheel::WheelT,
+        left_wheel: WheelPositionController<left_wheel::MotorT, left_wheel::EncoderT>,
         right_wheel: right_wheel::WheelT,
         serial: SerialT
     }
@@ -114,7 +118,7 @@ mod app {
         let tx_pin = gpioa.pa2.into_alternate();
         let serial = Serial::tx(ctx.device.USART2, tx_pin, 115200.bps(), &clocks).unwrap();
 
-        let (left_wheel, right_wheel) = {
+        let (mut left_wheel, right_wheel) = {
             let en_pins = (gpioa.pa8.into_alternate(), gpioa.pa9.into_alternate());
             let en_pwms = Timer::new(ctx.device.TIM1, &clocks).pwm(en_pins, 2.khz());
             let (left_en_pwm, right_en_pwm) = en_pwms;
@@ -122,6 +126,10 @@ mod app {
             let pid = Pid::new(0.25, 0.02, 1.0,
                                100.0, 100.0, 100.0,
                                100.0,
+                               0.0);
+            let position_pid = Pid::new(0.3, 0.0, 0.1,
+                               1.0, 1.0, 1.0,
+                               1.0,
                                0.0);
 
             ({
@@ -136,7 +144,9 @@ mod app {
                 let qei = Qei::new(encoder_timer, encoder_pins);
                 let encoder = RotaryEncoder::new(qei, WHEEL_ENCODER_PPR, true);
 
-                Wheel::new(motor, encoder, pid.clone(), WHEEL_MAX_ROTARY_SPEED, WHEEL_RADIUS)
+                let wheel = Wheel::new(motor, encoder, pid.clone(), WHEEL_MAX_ROTARY_SPEED, WHEEL_RADIUS);
+
+                WheelPositionController::new(wheel, position_pid, 20_00.0, 1.0)
             },
             {
                 let (in_1, in_2) = (gpioc.pc7.into_push_pull_output(), gpiob.pb6.into_push_pull_output());
@@ -153,6 +163,8 @@ mod app {
                 Wheel::new(motor, encoder, pid.clone(), WHEEL_MAX_ROTARY_SPEED, WHEEL_RADIUS)
             })
         };
+
+        left_wheel.set_speed(20.0);
 
         let mono = Timer::new(ctx.device.TIM2, &clocks).monotonic();
 
@@ -180,11 +192,11 @@ mod app {
         let right_wheel = cx.shared.right_wheel;
 
         (serial, left_wheel, right_wheel).lock(|serial, left_wheel, right_wheel| {
-            let target_speed = left_wheel.get_target_speed();
-            let speed = (left_wheel.get_speed(), right_wheel.get_speed());
-            let position = (left_wheel.get_position(), right_wheel.get_position());
-            rprintln!("{:?} {:?}", speed, position);
-            writeln!(serial, "{} {} {}", target_speed, speed.0, speed.1).unwrap();
+            let speed = left_wheel.get_speed();
+            let target = left_wheel.get_target_position();
+            let position = left_wheel.get_position();
+            rprintln!("{} {} {}", speed, position, target);
+            writeln!(serial, "{} {} {}", target, position, speed).unwrap();
         });
 
         printer::spawn_after(25.millis()).ok();
@@ -193,15 +205,15 @@ mod app {
     #[task(shared = [left_wheel], local = [i])]
     fn speed_updater(mut cx: speed_updater::Context) {
         let i = cx.local.i;
-        let new_speed = 1.4_f32 * WHEEL_RADIUS * (*i);
+        let new_speed = 20_00.0 * (*i);
         *i += 0.1;
         if *i >= 1.0 { *i = 0.0; }
 
         cx.shared.left_wheel.lock(|left_wheel| {
-            left_wheel.set_speed(new_speed);
+            left_wheel.set_position(100.0);
         });
 
-        speed_updater::spawn_after(2000.millis()).ok();
+        //speed_updater::spawn_after(2000.millis()).ok();
     }
 
     #[task(shared = [left_wheel, right_wheel])]
