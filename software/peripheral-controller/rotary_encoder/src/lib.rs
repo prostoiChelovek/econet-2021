@@ -1,5 +1,9 @@
 #![no_std]
 
+use core::fmt::Display;
+
+use num_traits::{AsPrimitive, NumCast};
+
 use embedded_hal::Qei;
 
 use encoder::{Update, GetPosition, GetVelocity};
@@ -52,14 +56,17 @@ where
 impl<QEI> Update for RotaryEncoder<QEI> 
 where
     QEI: Qei,
-    QEI::Count: Into<i64>
+    QEI::Count: Into<i64> + SignedPairMatcher,
+    <QEI::Count as SignedPairMatcher>::Type: 'static + Copy + NumCast + Display,
+    i64: AsPrimitive<<QEI::Count as SignedPairMatcher>::Type>
 {
     fn update(&mut self, time_delta_seconds: f32) {
         let count: i64 = self.qei.count().into();
-        let count_delta = (self.last_count - count) as i32;
+        let count_delta: <QEI::Count as SignedPairMatcher>::Type = (self.last_count - count).as_();
+        let count_delta: f32 = NumCast::from(count_delta).unwrap();
 
         let last_position = self.position;
-        self.position += count_delta as f32 / self.ppr;
+        self.position += count_delta / self.ppr;
 
         let position_delta = self.position - last_position;
         self.velocity = position_delta / time_delta_seconds;
@@ -86,5 +93,17 @@ where
     fn get_velocity(&self) -> f32 {
         self.maybe_reverse(self.velocity)
     }
+}
+
+trait SignedPairMatcher {
+    type Type;
+}
+
+impl SignedPairMatcher for u16 {
+    type Type = i16;
+}
+
+impl SignedPairMatcher for u32 {
+    type Type = i32;
 }
 
