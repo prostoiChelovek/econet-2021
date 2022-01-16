@@ -80,7 +80,7 @@ mod app {
     #[shared]
     struct Shared {
         left_wheel: Servo<left_wheel::MotorT, left_wheel::EncoderT>,
-        right_wheel: right_wheel::WheelT,
+        right_wheel: Servo<right_wheel::MotorT, right_wheel::EncoderT>,
         serial: SerialT
     }
 
@@ -160,7 +160,9 @@ mod app {
                 let qei = Qei::new(encoder_timer, encoder_pins);
                 let encoder = RotaryEncoder::new(qei, WHEEL_ENCODER_PPR, true);
 
-                Wheel::new(motor, encoder, pid.clone(), WHEEL_MAX_ROTARY_SPEED, WHEEL_RADIUS)
+                let wheel = Wheel::new(motor, encoder, pid.clone(), WHEEL_MAX_ROTARY_SPEED, WHEEL_RADIUS);
+
+                Servo::new(wheel, position_pid, 20_00.0, 1.0)
             })
         };
 
