@@ -68,6 +68,8 @@ mod app {
 
     type SerialT = serial::Tx<USART2>;
 
+    const WHEEL_RADIUS: f32 = 37.0;
+
     #[shared]
     struct Shared {
         left_wheel: left_wheel::WheelT,
@@ -130,7 +132,7 @@ mod app {
                                100.0,
                                0.0);
 
-            Wheel::new(motor, encoder, pid, 1.4)
+            Wheel::new(motor, encoder, pid, 1.4, WHEEL_RADIUS)
         };
 
         let right_wheel = {
@@ -150,7 +152,7 @@ mod app {
                                100.0,
                                0.0);
 
-            Wheel::new(motor, encoder, pid, 1.4)
+            Wheel::new(motor, encoder, pid, 1.4, WHEEL_RADIUS)
         };
 
         let mono = Timer::new(ctx.device.TIM2, &clocks).monotonic();
@@ -191,7 +193,7 @@ mod app {
     #[task(shared = [left_wheel], local = [i])]
     fn speed_updater(mut cx: speed_updater::Context) {
         let i = cx.local.i;
-        let new_speed = 1.4_f32 * (*i);
+        let new_speed = 1.4_f32 * WHEEL_RADIUS * (*i);
         *i += 0.1;
         if *i >= 1.0 { *i = 0.0; }
 
