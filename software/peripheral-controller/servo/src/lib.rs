@@ -13,8 +13,10 @@ pub trait SetPosition {
     type Position;
 
     fn set_position(&mut self, position: Self::Position);
+}
 
-    fn is_position_reached(&self) -> bool;
+pub trait CheckTargetReached {
+    fn is_target_reached(&self) -> bool;
 }
 
 pub struct Servo <S, E>
@@ -119,8 +121,14 @@ where
     fn set_position(&mut self, position: Self::Position) {
         self.pid.setpoint = self.normalize_position(position);
     }
+}
 
-    fn is_position_reached(&self) -> bool {
+impl<S, E> CheckTargetReached for Servo<S, E>
+where
+    S: SetSpeed + GetSpeed,
+    E: Encoder
+{
+    fn is_target_reached(&self) -> bool {
         let distance = self.get_target_position() - self.get_position();
         distance < self.max_target_distance
     }
