@@ -60,7 +60,7 @@ mod app {
     use encoder::*;
     use rotary_encoder::RotaryEncoder;
     use wheel::Wheel;
-    use wheel_position_controller::{WheelPositionController, SetPosition};
+    use servo::{Servo, SetPosition};
 
     type OutPP = Output<PushPull>;
 
@@ -79,7 +79,7 @@ mod app {
 
     #[shared]
     struct Shared {
-        left_wheel: WheelPositionController<left_wheel::MotorT, left_wheel::EncoderT>,
+        left_wheel: Servo<left_wheel::MotorT, left_wheel::EncoderT>,
         right_wheel: right_wheel::WheelT,
         serial: SerialT
     }
@@ -146,7 +146,7 @@ mod app {
 
                 let wheel = Wheel::new(motor, encoder, pid.clone(), WHEEL_MAX_ROTARY_SPEED, WHEEL_RADIUS);
 
-                WheelPositionController::new(wheel, position_pid, 20_00.0, 1.0)
+                Servo::new(wheel, position_pid, 20_00.0, 1.0)
             },
             {
                 let (in_1, in_2) = (gpioc.pc7.into_push_pull_output(), gpiob.pb6.into_push_pull_output());

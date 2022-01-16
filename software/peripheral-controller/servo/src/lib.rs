@@ -15,7 +15,7 @@ pub trait SetPosition {
     fn is_position_reached(&self) -> bool;
 }
 
-pub struct WheelPositionController <S, E>
+pub struct Servo <S, E>
 where
     S: SetSpeed + GetSpeed,
     E: Encoder,
@@ -30,7 +30,7 @@ where
     pub max_speed: f32,
 }
 
-impl<S, E> WheelPositionController<S, E>
+impl<S, E> Servo<S, E>
 where
     S: SetSpeed + GetSpeed,
     E: Encoder
@@ -71,7 +71,7 @@ where
     }
 }
 
-impl<S, E> SetSpeed for WheelPositionController<S, E>
+impl<S, E> SetSpeed for Servo<S, E>
 where
     S: SetSpeed + GetSpeed,
     E: Encoder
@@ -85,7 +85,7 @@ where
     }
 }
 
-impl<S, E> GetSpeed for WheelPositionController<S, E>
+impl<S, E> GetSpeed for Servo<S, E>
 where
     S: SetSpeed + GetSpeed,
     E: Encoder
@@ -97,7 +97,7 @@ where
     }
 }
 
-impl<S, E> GetPosition for WheelPositionController<S, E>
+impl<S, E> GetPosition for Servo<S, E>
 where
     S: SetSpeed + GetSpeed,
     E: Encoder
@@ -107,7 +107,7 @@ where
     }
 }
 
-impl<S, E> SetPosition for WheelPositionController<S, E>
+impl<S, E> SetPosition for Servo<S, E>
 where
     S: SetSpeed + GetSpeed,
     E: Encoder
@@ -122,7 +122,7 @@ where
     }
 }
 
-impl<S, E> Update for WheelPositionController<S, E>
+impl<S, E> Update for Servo<S, E>
 where
     S: SetSpeed + GetSpeed,
     <S as SetSpeed>::Speed: NumCast + Bounded,

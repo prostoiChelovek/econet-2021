@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name = "wheel_position_controller"
+name = "servo"
 version = "0.1.0"
 
 [dependencies]

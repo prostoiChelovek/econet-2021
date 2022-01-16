@@ -31,5 +31,5 @@ dc_motor = { path = "../dc_motor" }
 encoder = { path = "../encoder" }
 rotary_encoder = { path = "../rotary_encoder" }
 wheel = { path = "../wheel" }
-wheel_position_controller = { path = "../wheel_position_controller" }
+servo = { path = "../servo" }
 
