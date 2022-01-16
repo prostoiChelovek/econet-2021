@@ -11,6 +11,8 @@ use wheel::Wheel;
 
 pub trait SetPosition {
     fn set_position(&mut self, position: f32);
+
+    fn is_position_reached(&self) -> bool;
 }
 
 pub struct WheelPositionController <S, E>
@@ -112,6 +114,11 @@ where
 {
     fn set_position(&mut self, position: f32) {
         self.pid.setpoint = self.normalize_position(position);
+    }
+
+    fn is_position_reached(&self) -> bool {
+        let distance = self.get_target_position() - self.get_position();
+        distance < self.max_target_distance
     }
 }
 
