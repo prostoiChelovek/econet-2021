@@ -10,7 +10,9 @@ use encoder::{Encoder, Update, GetPosition};
 use wheel::Wheel;
 
 pub trait SetPosition {
-    fn set_position(&mut self, position: f32);
+    type Position;
+
+    fn set_position(&mut self, position: Self::Position);
 
     fn is_position_reached(&self) -> bool;
 }
@@ -112,7 +114,9 @@ where
     S: SetSpeed + GetSpeed,
     E: Encoder
 {
-    fn set_position(&mut self, position: f32) {
+    type Position = f32;
+
+    fn set_position(&mut self, position: Self::Position) {
         self.pid.setpoint = self.normalize_position(position);
     }
 
