@@ -1,10 +1,8 @@
 #![no_std]
 
-use rtt_target::rprintln;
-
 use core::{ops::Add, fmt::Display};
 
-use num_traits::{float::FloatCore, NumCast, ToPrimitive, bounds::Bounded};
+use num_traits::{NumCast, ToPrimitive, bounds::Bounded};
 use pid::Pid;
 
 use motor::{SetSpeed, GetSpeed};
@@ -137,8 +135,6 @@ where
         let control = self.pid.next_control_output(position).output;
         let new_speed = current_speed + control;
         let new_speed = self.denormalize_speed(new_speed).min(self.max_speed).max(-self.max_speed);
-
-        rprintln!("cp: {}, cs: {}, ctrl: {}, ns: {}, tp: {}", self.denormalize_position(position), current_speed, control, new_speed, self.get_target_position());
 
         self.wheel.set_speed(new_speed);
     }
