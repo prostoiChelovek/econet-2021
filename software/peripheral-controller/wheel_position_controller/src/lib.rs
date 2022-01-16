@@ -63,11 +63,11 @@ where
     }
 
     fn normalize_speed(&self, speed: f32) -> f32 {
-        speed / self.max_speed
+        speed / self.wheel.max_speed
     }
 
     fn denormalize_speed(&self, speed: f32) -> f32 {
-        speed * self.max_speed
+        speed * self.wheel.max_speed
     }
 }
 
