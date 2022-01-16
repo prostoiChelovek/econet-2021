@@ -80,7 +80,7 @@ where
     QEI: Qei,
     QEI::Count: Into<i64>
 {
-    fn get_position(&self) -> f32 {
+    fn get_position(&self) -> Self::Position {
         self.maybe_reverse(self.position)
     }
 }

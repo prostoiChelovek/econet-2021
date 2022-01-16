@@ -12,7 +12,8 @@ use encoder::{Encoder, Update, GetPosition};
 pub struct Wheel<S, E>
 where
     S: SetSpeed + GetSpeed,
-    E: Encoder
+    E: Encoder,
+    f32: From<<E as GetPosition>::Position>
 {
     speed: S,
     encoder: E,
@@ -26,7 +27,8 @@ where
 impl<S, E> Wheel<S, E>
 where
     S: SetSpeed + GetSpeed,
-    E: Encoder
+    E: Encoder,
+    f32: From<<E as GetPosition>::Position>
 {
     pub fn new(speed_controller: S, encoder: E, pid: Pid<f32>, max_speed_rps: f32, radius_cm: f32) -> Self {
         let max_speed_cm = max_speed_rps * radius_cm;
@@ -63,7 +65,8 @@ where
     <S as SetSpeed>::Speed: NumCast + Bounded,
     <S as GetSpeed>::Speed: NumCast + Add + Copy,
     <<S as GetSpeed>::Speed as Add>::Output: ToPrimitive + Display,
-    E: Encoder
+    E: Encoder,
+    f32: From<<E as GetPosition>::Position>
 {
     fn update(&mut self, time_delta_seconds: f32) {
         let min_speed_val: f32 = NumCast::from(<S as SetSpeed>::Speed::min_value()).unwrap();
@@ -87,7 +90,8 @@ where
 impl<S, E> SetSpeed for Wheel<S, E>
 where
     S: SetSpeed + GetSpeed,
-    E: Encoder
+    E: Encoder,
+    f32: From<<E as GetPosition>::Position>
 {
     type Speed = f32;
 
@@ -99,7 +103,8 @@ where
 impl<S, E> GetSpeed for Wheel<S, E>
 where
     S: SetSpeed + GetSpeed,
-    E: Encoder
+    E: Encoder,
+    f32: From<<E as GetPosition>::Position>
 {
     type Speed = f32;
 
@@ -111,10 +116,11 @@ where
 impl<S, E> GetPosition for Wheel<S, E>
 where
     S: SetSpeed + GetSpeed,
-    E: Encoder
+    E: Encoder,
+    f32: From<<E as GetPosition>::Position>
 {
-    fn get_position(&self) -> f32 {
-        self.to_cm(self.encoder.get_position())
+    fn get_position(&self) -> Self::Position {
+        self.to_cm(self.encoder.get_position().into())
     }
 }
 

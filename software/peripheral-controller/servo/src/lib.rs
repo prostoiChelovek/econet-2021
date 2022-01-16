@@ -23,6 +23,7 @@ pub struct Servo <S, E>
 where
     S: SetSpeed + GetSpeed,
     E: Encoder,
+    f32: From<<E as GetPosition>::Position>,
 {
     wheel: Wheel<S, E>,
 
@@ -37,7 +38,8 @@ where
 impl<S, E> Servo<S, E>
 where
     S: SetSpeed + GetSpeed,
-    E: Encoder
+    E: Encoder,
+    f32: From<<E as GetPosition>::Position>
 {
     pub fn new(wheel: Wheel<S, E>, pid: Pid<f32>, max_position: f32, target_position_epsilon: f32) -> Self {
         assert_ne!(max_position, 0.0);
@@ -78,7 +80,8 @@ where
 impl<S, E> SetSpeed for Servo<S, E>
 where
     S: SetSpeed + GetSpeed,
-    E: Encoder
+    E: Encoder,
+    f32: From<<E as GetPosition>::Position>
 {
     type Speed = f32;
 
@@ -92,7 +95,8 @@ where
 impl<S, E> GetSpeed for Servo<S, E>
 where
     S: SetSpeed + GetSpeed,
-    E: Encoder
+    E: Encoder,
+    f32: From<<E as GetPosition>::Position>
 {
     type Speed = f32;
 
@@ -104,9 +108,10 @@ where
 impl<S, E> GetPosition for Servo<S, E>
 where
     S: SetSpeed + GetSpeed,
-    E: Encoder
+    E: Encoder,
+    f32: From<<E as GetPosition>::Position>
 {
-    fn get_position(&self) -> f32 {
+    fn get_position(&self) -> Self::Position {
         self.wheel.get_position()
     }
 }
@@ -114,7 +119,8 @@ where
 impl<S, E> SetPosition for Servo<S, E>
 where
     S: SetSpeed + GetSpeed,
-    E: Encoder
+    E: Encoder,
+    f32: From<<E as GetPosition>::Position>
 {
     type Position = f32;
 
@@ -126,7 +132,8 @@ where
 impl<S, E> CheckTargetReached for Servo<S, E>
 where
     S: SetSpeed + GetSpeed,
-    E: Encoder
+    E: Encoder,
+    f32: From<<E as GetPosition>::Position>
 {
     fn is_target_reached(&self) -> bool {
         let distance = self.get_target_position() - self.get_position();
@@ -140,7 +147,8 @@ where
     <S as SetSpeed>::Speed: NumCast + Bounded,
     <S as GetSpeed>::Speed: NumCast + Add + Copy,
     <<S as GetSpeed>::Speed as Add>::Output: ToPrimitive + Display,
-    E: Encoder
+    E: Encoder,
+    f32: From<<E as GetPosition>::Position>
 {
     fn update(&mut self, time_delta_seconds: f32) {
         self.wheel.update(time_delta_seconds);
