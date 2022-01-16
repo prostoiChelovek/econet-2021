@@ -69,6 +69,9 @@ mod app {
     type SerialT = serial::Tx<USART2>;
 
     const WHEEL_RADIUS: f32 = 37.0;
+    const WHEEL_MIN_SPEED_PERCENT: u8 = 25;
+    const WHEEL_MAX_ROTARY_SPEED: f32 =  1.4;
+    const WHEEL_ENCODER_PPR: f32 = 1440_f32;
 
     #[shared]
     struct Shared {
@@ -111,48 +114,44 @@ mod app {
         let tx_pin = gpioa.pa2.into_alternate();
         let serial = Serial::tx(ctx.device.USART2, tx_pin, 115200.bps(), &clocks).unwrap();
 
-        let en_pins = (gpioa.pa8.into_alternate(), gpioa.pa9.into_alternate());
-        let en_pwms = Timer::new(ctx.device.TIM1, &clocks).pwm(en_pins, 2.khz());
-        let (left_en_pwm, right_en_pwm) = en_pwms;
+        let (left_wheel, right_wheel) = {
+            let en_pins = (gpioa.pa8.into_alternate(), gpioa.pa9.into_alternate());
+            let en_pwms = Timer::new(ctx.device.TIM1, &clocks).pwm(en_pins, 2.khz());
+            let (left_en_pwm, right_en_pwm) = en_pwms;
 
-        let left_wheel = {
-            let (in_1, in_2) = (gpiob.pb10.into_push_pull_output(), gpiob.pb3.into_push_pull_output());
-
-            let directin = TwoPinSetDirection::new(in_1, in_2);
-            let speed = PwmSetSpeed::new(left_en_pwm, 25);
-            let motor = Motor::new(directin, speed);
-
-            let encoder_pins = (gpiob.pb4.into_alternate(), gpiob.pb5.into_alternate());
-            let encoder_timer = ctx.device.TIM3;
-            let qei = Qei::new(encoder_timer, encoder_pins);
-            let encoder = RotaryEncoder::new(qei, 1440_f32, true);
-
-            let pid = Pid::new(0.25, 0.02, 1.0, // 0.25, 0.01, 0.25
+            let pid = Pid::new(0.25, 0.02, 1.0,
                                100.0, 100.0, 100.0,
                                100.0,
                                0.0);
 
-            Wheel::new(motor, encoder, pid, 1.4, WHEEL_RADIUS)
-        };
+            ({
+                let (in_1, in_2) = (gpiob.pb10.into_push_pull_output(), gpiob.pb3.into_push_pull_output());
 
-        let right_wheel = {
-            let (in_1, in_2) = (gpioc.pc7.into_push_pull_output(), gpiob.pb6.into_push_pull_output());
+                let directin = TwoPinSetDirection::new(in_1, in_2);
+                let speed = PwmSetSpeed::new(left_en_pwm, WHEEL_MIN_SPEED_PERCENT);
+                let motor = Motor::new(directin, speed);
 
-            let directin = TwoPinSetDirection::new(in_1, in_2);
-            let speed = PwmSetSpeed::new(right_en_pwm, 25);
-            let motor = Motor::new(directin, speed);
+                let encoder_pins = (gpiob.pb4.into_alternate(), gpiob.pb5.into_alternate());
+                let encoder_timer = ctx.device.TIM3;
+                let qei = Qei::new(encoder_timer, encoder_pins);
+                let encoder = RotaryEncoder::new(qei, WHEEL_ENCODER_PPR, true);
 
-            let encoder_pins = (gpioa.pa0.into_alternate(), gpioa.pa1.into_alternate());
-            let encoder_timer = ctx.device.TIM5;
-            let qei = Qei::new(encoder_timer, encoder_pins);
-            let encoder = RotaryEncoder::new(qei, 1440_f32, true);
+                Wheel::new(motor, encoder, pid.clone(), WHEEL_MAX_ROTARY_SPEED, WHEEL_RADIUS)
+            },
+            {
+                let (in_1, in_2) = (gpioc.pc7.into_push_pull_output(), gpiob.pb6.into_push_pull_output());
 
-            let pid = Pid::new(0.25, 0.02, 1.0, // 0.25, 0.01, 0.25
-                               100.0, 100.0, 100.0,
-                               100.0,
-                               0.0);
+                let directin = TwoPinSetDirection::new(in_1, in_2);
+                let speed = PwmSetSpeed::new(right_en_pwm, WHEEL_MIN_SPEED_PERCENT);
+                let motor = Motor::new(directin, speed);
 
-            Wheel::new(motor, encoder, pid, 1.4, WHEEL_RADIUS)
+                let encoder_pins = (gpioa.pa0.into_alternate(), gpioa.pa1.into_alternate());
+                let encoder_timer = ctx.device.TIM5;
+                let qei = Qei::new(encoder_timer, encoder_pins);
+                let encoder = RotaryEncoder::new(qei, WHEEL_ENCODER_PPR, true);
+
+                Wheel::new(motor, encoder, pid.clone(), WHEEL_MAX_ROTARY_SPEED, WHEEL_RADIUS)
+            })
         };
 
         let mono = Timer::new(ctx.device.TIM2, &clocks).monotonic();
