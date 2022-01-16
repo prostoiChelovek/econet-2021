@@ -6,6 +6,7 @@ members = [
     "rotary_encoder",
     "wheel",
     "servo",
+    "chassis",
     "main"
 ]
 
