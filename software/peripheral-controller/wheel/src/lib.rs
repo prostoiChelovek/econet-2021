@@ -7,7 +7,7 @@ use num_traits::{NumCast, Signed, ToPrimitive, bounds::Bounded};
 use pid::Pid;
 
 use motor::{SetSpeed, GetSpeed};
-use encoder::{Encoder, Update};
+use encoder::{Encoder, Update, GetPosition};
 
 pub struct Wheel<S, E>
 where
@@ -107,3 +107,14 @@ where
         self.to_cm(self.encoder.get_velocity())
     }
 }
+
+impl<S, E> GetPosition for Wheel<S, E>
+where
+    S: SetSpeed + GetSpeed,
+    E: Encoder
+{
+    fn get_position(&self) -> f32 {
+        self.to_cm(self.encoder.get_position())
+    }
+}
+

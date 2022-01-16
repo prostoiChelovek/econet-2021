@@ -182,7 +182,8 @@ mod app {
         (serial, left_wheel, right_wheel).lock(|serial, left_wheel, right_wheel| {
             let target_speed = left_wheel.get_target_speed();
             let speed = (left_wheel.get_speed(), right_wheel.get_speed());
-            rprintln!("{:?}", speed);
+            let position = (left_wheel.get_position(), right_wheel.get_position());
+            rprintln!("{:?} {:?}", speed, position);
             writeln!(serial, "{} {} {}", target_speed, speed.0, speed.1).unwrap();
         });
 
