@@ -95,7 +95,8 @@ mod app {
 
     #[local]
     struct Local {
-        i: f32
+        x: f32,
+        y: f32
     }
 
     #[init]
@@ -191,7 +192,7 @@ mod app {
                 chassis
             },
             Local {
-                i: 0.0
+                x: 0.0, y: 0.0
             },
             init::Monotonics(mono),
         )
@@ -211,18 +212,23 @@ mod app {
         printer::spawn_after(25.millis()).ok();
     }
 
-    #[task(shared = [chassis], local = [i])]
+    #[task(shared = [chassis], local = [x, y])]
     fn position_updater(mut cx: position_updater::Context) {
-        let i = cx.local.i;
-        let new_position = 360.0 * (*i);
-        *i += 0.1;
-        if *i >= 1.0 { *i = 0.0; }
+        let (x, y) = (cx.local.x, cx.local.y);
+        let new_position = ChassisPosition {
+            linear: (*x * 200.0, *y * 200.0),
+            angular: 90.0
+        };
+
+        *x += 0.1; *y += 0.1;
+        if *x >= 1.0 { *x = 0.0; }
+        if *y >= 1.0 { *y = 0.0; }
 
         cx.shared.chassis.lock(|chassis| {
-            chassis.move_relative(ChassisPosition { linear: (0.0, 0.0), angular: new_position } );
+            chassis.move_relative(new_position);
         });
 
-        position_updater::spawn_after(5_000.millis()).ok();
+        position_updater::spawn_after(15_000.millis()).ok();
     }
 
     #[task(shared = [chassis])]
