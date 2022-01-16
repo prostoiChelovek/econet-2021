@@ -24,7 +24,7 @@ macro_rules! wheel_alias {
                 pub type Encoder = RotaryEncoder<QeiT>;
             }
 
-            pub type WheelT = Wheel<_motor::Motor, _encoder::Encoder>;
+            pub type _WheelT = Wheel<_motor::Motor, _encoder::Encoder>;
 
             pub use _motor::Motor as MotorT;
             pub use _encoder::Encoder as EncoderT;
@@ -75,7 +75,10 @@ mod app {
     const WHEEL_RADIUS: f32 = 37.0;
     const WHEEL_MIN_SPEED_PERCENT: u8 = 25;
     const WHEEL_MAX_ROTARY_SPEED: f32 =  1.4;
-    const WHEEL_ENCODER_PPR: f32 = 1440_f32;
+    const WHEEL_ENCODER_PPR: f32 = 1440.0;
+
+    const SERVO_MAX_DISTANCE: f32 = 20_00.0;
+    const SERVO_MAX_TARRGET_DISTANCE: f32 = 1.0;
 
     #[shared]
     struct Shared {
@@ -123,7 +126,7 @@ mod app {
             let en_pwms = Timer::new(ctx.device.TIM1, &clocks).pwm(en_pins, 2.khz());
             let (left_en_pwm, right_en_pwm) = en_pwms;
 
-            let pid = Pid::new(0.25, 0.02, 1.0,
+            let speed_pid = Pid::new(0.25, 0.02, 1.0,
                                100.0, 100.0, 100.0,
                                100.0,
                                0.0);
@@ -144,9 +147,9 @@ mod app {
                 let qei = Qei::new(encoder_timer, encoder_pins);
                 let encoder = RotaryEncoder::new(qei, WHEEL_ENCODER_PPR, true);
 
-                let wheel = Wheel::new(motor, encoder, pid.clone(), WHEEL_MAX_ROTARY_SPEED, WHEEL_RADIUS);
+                let wheel = Wheel::new(motor, encoder, speed_pid.clone(), WHEEL_MAX_ROTARY_SPEED, WHEEL_RADIUS);
 
-                Servo::new(wheel, position_pid, 20_00.0, 1.0)
+                Servo::new(wheel, position_pid, SERVO_MAX_DISTANCE, SERVO_MAX_TARRGET_DISTANCE)
             },
             {
                 let (in_1, in_2) = (gpioc.pc7.into_push_pull_output(), gpiob.pb6.into_push_pull_output());
@@ -160,9 +163,9 @@ mod app {
                 let qei = Qei::new(encoder_timer, encoder_pins);
                 let encoder = RotaryEncoder::new(qei, WHEEL_ENCODER_PPR, true);
 
-                let wheel = Wheel::new(motor, encoder, pid.clone(), WHEEL_MAX_ROTARY_SPEED, WHEEL_RADIUS);
+                let wheel = Wheel::new(motor, encoder, speed_pid.clone(), WHEEL_MAX_ROTARY_SPEED, WHEEL_RADIUS);
 
-                Servo::new(wheel, position_pid, 20_00.0, 1.0)
+                Servo::new(wheel, position_pid, SERVO_MAX_DISTANCE, SERVO_MAX_TARRGET_DISTANCE)
             })
         };
 
