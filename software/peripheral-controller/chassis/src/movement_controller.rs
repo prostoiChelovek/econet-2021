@@ -64,6 +64,10 @@ impl<T: MovementControlled> MovementController<T> {
     }
 
     fn start_stage(&mut self) {
+        if self.movement.is_none() {
+            return;
+        }
+
         let movement = self.movement.as_mut().unwrap();
         let (linear, angular) = (movement.movement.linear, movement.movement.angular);
         let current_pos = self.atomic.get_position();
