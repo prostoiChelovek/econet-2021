@@ -28,7 +28,7 @@ pub trait MoveAtomic {
 
 struct ChassisMovement {
     pub movement: AtomicMovement,
-    pub start: (f32, f32),
+    pub prev_pos: (f32, f32),
 }
 
 pub struct Chassis<L, R>
@@ -87,20 +87,21 @@ where
 
         let wheel_positions = self.get_wheel_positions();
 
-        if let Some(ref movement) = self.current_movement {
-            let wheels_start_distance = (
-                (wheel_positions.0 - movement.start.0), (wheel_positions.1 - movement.start.1)
+        if let Some(ref mut movement) = self.current_movement {
+            let wheels_distance = (
+                (wheel_positions.0 - movement.prev_pos.0), (wheel_positions.1 - movement.prev_pos.1)
             );
+            movement.prev_pos = wheel_positions;
 
             match movement.movement {
                 AtomicMovement::Linear(_) => {
-                    self.position.linear.0 += libm::cosf(self.position.angular) * wheels_start_distance.0;
-                    self.position.linear.1 += libm::sinf(self.position.angular) * wheels_start_distance.1;
+                    self.position.linear.0 += libm::cosf(self.position.angular) * wheels_distance.0;
+                    self.position.linear.1 += libm::sinf(self.position.angular) * wheels_distance.1;
                 },
                 AtomicMovement::Angular(_) => {
                     // TODO: it assumes that wheels have travelled an equal distance,
                     //       but it is probably incorrect
-                    self.position.angular += (wheels_start_distance.0 * 2.0) / self.wheels_distance;
+                    self.position.angular += (wheels_distance.0 * 2.0) / self.wheels_distance;
                 },
             }
 
@@ -161,7 +162,7 @@ where
 
         self.current_movement = Some(ChassisMovement {
             movement: movement.clone(),
-            start: wheel_positions.clone()
+            prev_pos: wheel_positions.clone()
         });
 
         match movement {
