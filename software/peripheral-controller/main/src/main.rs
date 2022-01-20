@@ -40,20 +40,23 @@ mod app {
 
     use stm32f4xx_hal::{
         prelude::*,
-        pac, pac::{TIM1, TIM3, TIM5, USART2},
+        pac, pac::{TIM1, TIM3, TIM5, USART2, I2C1},
         gpio::{
             gpioa::{PA0, PA1},
-            gpiob::{PB3, PB4, PB5, PB10, PB6},
+            gpiob::{PB3, PB4, PB5, PB10, PB6, PB8, PB9},
             gpioc::PC7,
-            Output, PushPull, Alternate
+            Output, PushPull, Alternate, OpenDrain
         },
+        delay::Delay,
         timer::{monotonic::MonoTimer, Timer},
         pwm::{PwmChannel, C1, C2},
         qei::Qei,
-        serial, serial::Serial
+        serial, serial::Serial, i2c, i2c::I2c
     };
+    use shared_bus_rtic::SharedBus;
 
     use pid::Pid;
+    use adxl343::{Adxl343, accelerometer::Accelerometer};
 
     use motor::{Motor, SetSpeed};
     use dc_motor::{TwoPinSetDirection, PwmSetSpeed};
@@ -62,6 +65,7 @@ mod app {
     use wheel::Wheel;
     use servo::Servo;
     use chassis::{chassis::{Chassis, ChassisPosition, ChassisSpeed}, movement_controller::{MovementController, MoveRelative}};
+    use itg3205::Itg3205;
 
     type OutPP = Output<PushPull>;
 
@@ -70,6 +74,18 @@ mod app {
 
     wheel_alias!(left_wheel, PB10, PB3, TIM1, C1, PB4, PB5, TIM3, 2_u8);
     wheel_alias!(right_wheel, PC7, PB6, TIM1, C2, PA0, PA1, TIM5, 2_u8);
+
+    mod i2c_bus { 
+        use super::*;
+
+        type PinMode = Alternate<OpenDrain, 4_u8>;
+        pub type I2cT = I2c<I2C1, (PB8<PinMode>, PB9<PinMode>)>;
+        pub type BusT = SharedBus<I2cT>;
+
+        pub fn create(i2c: I2cT) -> BusT {
+            shared_bus_rtic::new!(i2c, I2cT)
+        }
+    }
 
     type SerialT = serial::Tx<USART2>;
 
@@ -126,7 +142,32 @@ mod app {
         let gpioc = ctx.device.GPIOC.split();
 
         let tx_pin = gpioa.pa2.into_alternate();
-        let serial = Serial::tx(ctx.device.USART2, tx_pin, 115200.bps(), &clocks).unwrap();
+        let mut serial = Serial::tx(ctx.device.USART2, tx_pin, 115200.bps(), &clocks).unwrap();
+
+        let mut delay = Delay::new(ctx.core.SYST, &clocks);
+
+        let scl = gpiob
+            .pb8
+            .into_alternate()
+            .internal_pull_up(true)
+            .set_open_drain();
+        let sda = gpiob
+            .pb9
+            .into_alternate()
+            .internal_pull_up(true)
+            .set_open_drain();
+        let i2c = I2c::new(ctx.device.I2C1, (scl, sda), 400.khz(), &clocks);
+        let bus = i2c_bus::create(i2c);
+
+        let mut accel = Adxl343::new(bus).unwrap();
+        let mut gyro = Itg3205::new(bus).unwrap();
+        gyro.calibrate(100, &mut delay);
+
+        loop {
+            let a = accel.accel_norm().unwrap();
+            let g = gyro.read().unwrap();
+            writeln!(serial, "{} {} {} {} {} {}", a.x, a.y, a.z, g.x, g.y, g.z).unwrap();
+        }
 
         let (left_wheel, right_wheel) = {
             let en_pins = (gpioa.pa8.into_alternate(), gpioa.pa9.into_alternate());
