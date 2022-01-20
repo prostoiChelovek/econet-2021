@@ -87,6 +87,15 @@ mod app {
         }
     }
 
+    mod gy85 {
+        use super::*;
+
+        pub type AccelerometerT = Adxl343<i2c_bus::BusT>;
+        pub type GyroT = Itg3205<i2c_bus::BusT>;
+
+        pub struct Gy85(pub AccelerometerT, pub GyroT);
+    }
+
     type SerialT = serial::Tx<USART2>;
 
     const WHEEL_RADIUS: f32 = 37.0;
@@ -106,7 +115,8 @@ mod app {
                 Servo<left_wheel::MotorT, left_wheel::EncoderT>,
                 Servo<right_wheel::MotorT, right_wheel::EncoderT>
             >>,
-        serial: SerialT
+        serial: SerialT,
+        gy85: gy85::Gy85
     }
 
     #[local]
@@ -162,12 +172,6 @@ mod app {
         let mut accel = Adxl343::new(bus).unwrap();
         let mut gyro = Itg3205::new(bus).unwrap();
         gyro.calibrate(100, &mut delay);
-
-        loop {
-            let a = accel.accel_norm().unwrap();
-            let g = gyro.read().unwrap();
-            writeln!(serial, "{} {} {} {} {} {}", a.x, a.y, a.z, g.x, g.y, g.z).unwrap();
-        }
 
         let (left_wheel, right_wheel) = {
             let en_pins = (gpioa.pa8.into_alternate(), gpioa.pa9.into_alternate());
@@ -230,7 +234,8 @@ mod app {
         (
             Shared {
                 serial,
-                chassis
+                chassis,
+                gy85: gy85::Gy85(accel, gyro)
             },
             Local {
                 x: 0.0, y: 0.0
