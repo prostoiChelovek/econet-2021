@@ -3,18 +3,24 @@
 
 use panic_probe as _;
 
+macro_rules! motor_alias {
+    ($name:ident, $dir_1_pin:ident, $dir_2_pin:ident, $pwm_timer:ident, $pwm_chan:ident) => {
+        mod $name {
+            use super::*;
+
+            type SetDirectionT = TwoPinSetDirection<$dir_1_pin<OutPP>, $dir_2_pin<OutPP>>;
+            type SetSpeedT = PwmSetSpeed<PwmChannel<$pwm_timer, $pwm_chan>>;
+            pub type Motor = motor::Motor<SetDirectionT, SetSpeedT>;
+        }
+    }
+}
+
 macro_rules! wheel_alias {
     ($name:ident, $dir_1_pin:ident, $dir_2_pin:ident, $pwm_timer:ident, $pwm_chan:ident, $qei_pin_1:ident, $qei_pin_2:ident, $qei_tim:ident, $qei_af:literal) => {
         mod $name {
             use super::*;
 
-            mod _motor {
-                use super::*;
-
-                type SetDirectionT = TwoPinSetDirection<$dir_1_pin<OutPP>, $dir_2_pin<OutPP>>;
-                type SetSpeedT = PwmSetSpeed<PwmChannel<$pwm_timer, $pwm_chan>>;
-                pub type Motor = motor::Motor<SetDirectionT, SetSpeedT>;
-            }
+            motor_alias!(_motor, $dir_1_pin, $dir_2_pin, $pwm_timer, $pwm_chan);
 
             mod _encoder {
                 use super::*;
