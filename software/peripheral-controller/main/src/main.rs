@@ -42,9 +42,9 @@ mod app {
         prelude::*,
         pac, pac::{TIM1, TIM3, TIM5, USART2, I2C1},
         gpio::{
-            gpioa::{PA0, PA1},
+            gpioa::{PA0, PA1, PA12},
             gpiob::{PB3, PB4, PB5, PB10, PB6, PB8, PB9},
-            gpioc::PC7,
+            gpioc::{PC5, PC6, PC7, PC8, PC9},
             Output, PushPull, Alternate, OpenDrain
         },
         delay::Delay,
@@ -66,6 +66,7 @@ mod app {
     use servo::Servo;
     use chassis::{chassis::{Chassis, ChassisPosition, ChassisSpeed}, movement_controller::{MovementController, MoveRelative}};
     use itg3205::Itg3205;
+    use drawers_controller::Drawers;
 
     type OutPP = Output<PushPull>;
 
@@ -94,6 +95,14 @@ mod app {
         pub type GyroT = Itg3205<i2c_bus::BusT>;
 
         pub struct Gy85(pub AccelerometerT, pub GyroT);
+    }
+
+    mod drawers {
+        use super::*;
+
+        type SetDirectionT = TwoPinSetDirection<PC9<OutPP>, PC8<OutPP>>;
+        type EnablesT = (PC6<OutPP>, PC5<OutPP>, PA12<OutPP>);
+        pub type DrawersT = Drawers<SetDirectionT, EnablesT>;
     }
 
     type SerialT = serial::Tx<USART2>;

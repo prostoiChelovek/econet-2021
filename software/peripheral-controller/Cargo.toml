@@ -8,6 +8,7 @@ members = [
     "servo",
     "chassis",
     "itg3205",
+    "drawers_controller",
     "main"
 ]
 

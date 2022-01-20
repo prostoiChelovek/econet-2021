@@ -37,4 +37,5 @@ wheel = { path = "../wheel" }
 servo = { path = "../servo" }
 chassis = { path = "../chassis" }
 itg3205 = { path = "../itg3205" }
+drawers_controller = { path = "../drawers_controller" }
 
