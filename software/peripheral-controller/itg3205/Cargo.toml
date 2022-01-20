@@ -1,0 +1,10 @@
+[package]
+edition = "2021"
+name = "itg3205"
+version = "0.1.0"
+
+[dependencies]
+embedded-hal = "0.2"
+
+micromath = "^1"
+
