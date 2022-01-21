@@ -99,7 +99,7 @@ where
     // TOOD: this is kinda dumb
     fn get_rotation(&mut self) -> f32 {
         let g = self.read().unwrap();
-        g.y
+        g.z
     }
 }
 
