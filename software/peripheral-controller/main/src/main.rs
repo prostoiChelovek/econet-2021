@@ -58,12 +58,12 @@ mod app {
     use pid::Pid;
     use adxl343::{Adxl343, accelerometer::Accelerometer};
 
-    use motor::{Motor, SetSpeed};
+    use motor::{Motor, SetSpeed, GetSpeed};
     use dc_motor::{TwoPinSetDirection, PwmSetSpeed};
     use encoder::*;
     use rotary_encoder::RotaryEncoder;
     use wheel::Wheel;
-    use servo::Servo;
+    use servo::{Servo, SetPosition};
     use chassis::{chassis::{Chassis, ChassisPosition, ChassisSpeed}, movement_controller::{MovementController, MoveRelative}};
     use itg3205::Itg3205;
     use drawers_controller::Drawers;
@@ -181,7 +181,7 @@ mod app {
         let mut gyro = Itg3205::new(bus).unwrap();
         gyro.calibrate(100, &mut delay);
 
-        let (left_wheel, right_wheel) = {
+        let (left_wheel, mut right_wheel) = {
             let en_pins = (gpioa.pa8.into_alternate(), gpioa.pa9.into_alternate());
             let en_pwms = Timer::new(ctx.device.TIM1, &clocks).pwm(en_pins, 2.khz());
             let (left_en_pwm, right_en_pwm) = en_pwms;
@@ -221,7 +221,7 @@ mod app {
                 let encoder_pins = (gpioa.pa0.into_alternate(), gpioa.pa1.into_alternate());
                 let encoder_timer = ctx.device.TIM5;
                 let qei = Qei::new(encoder_timer, encoder_pins);
-                let encoder = RotaryEncoder::new(qei, WHEEL_ENCODER_PPR, true);
+                let encoder = RotaryEncoder::new(qei, WHEEL_ENCODER_PPR, false);
 
                 let wheel = Wheel::new(motor, encoder, speed_pid.clone(), WHEEL_MAX_ROTARY_SPEED, WHEEL_RADIUS);
 
@@ -229,14 +229,26 @@ mod app {
             })
         };
 
-        let chassis = Chassis::new(left_wheel, right_wheel, gyro, WHEELS_DISTANCE);
+        let rotation_pid = Pid::new(1.0, 0.0, 50.0,
+                                    1.0, 0.1, 1.0,
+                                    1.0,
+                                    0.0);
+        let chassis = Chassis::new(left_wheel, right_wheel, gyro, WHEELS_DISTANCE,
+                                   (-200.0, 200.0), rotation_pid);
         let mut chassis = MovementController::new(chassis);
-        chassis.set_speed(ChassisSpeed { linear: 45.0, angular: 60.0 } );
+        chassis.set_speed(ChassisSpeed { linear: 40.0, angular: 60.0 } );
+
+        let new_position = ChassisPosition {
+            linear: (200.0, 200.0),
+            angular: 0.0
+        };
+
+        chassis.move_relative(new_position);
 
         let mono = Timer::new(ctx.device.TIM2, &clocks).monotonic();
 
         updater::spawn().ok();
-        position_updater::spawn().ok();
+        //position_updater::spawn().ok();
         printer::spawn().ok();
 
         (
@@ -257,9 +269,11 @@ mod app {
         let chassis = cx.shared.chassis;
 
         (serial, chassis).lock(|serial, chassis| {
+            let speed = chassis.get_speed();
             let position = chassis.get_position();
-            rprintln!("{:?}", position);
-            writeln!(serial, "{} {} {}", position.linear.0, position.linear.1, position.angular).unwrap();
+            //rprintln!("{:?}", position);
+            //writeln!(serial, "{} {} {}", position.linear.0, position.linear.1, position.angular).unwrap();
+            writeln!(serial, "{} {}", speed.0, speed.1).unwrap();
         });
 
         printer::spawn_after(25.millis()).ok();
