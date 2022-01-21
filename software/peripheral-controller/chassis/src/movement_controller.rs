@@ -2,12 +2,12 @@ use num_traits::float::FloatCore;
 
 use crate::chassis::{MoveAtomic, ChassisPosition, AtomicMovement};
 
-use motor::SetSpeed;
+use motor::{SetSpeed, GetSpeed};
 use servo::CheckTargetReached;
 use encoder::{Update, GetPosition};
 
 // TODO: this associated type specification should probably not be here
-pub trait MovementControlled = MoveAtomic + Update + GetPosition<Position = ChassisPosition> + CheckTargetReached + SetSpeed;
+pub trait MovementControlled = MoveAtomic + Update + GetPosition<Position = ChassisPosition> + CheckTargetReached + SetSpeed + GetSpeed<Speed = (f32, f32)>;
 
 pub trait MoveRelative {
     // TODO: it is semantically wrong to use ChassisPosition here
@@ -126,9 +126,17 @@ impl<T: MovementControlled> GetPosition for MovementController<T> {
 }
 
 impl<T: MovementControlled> SetSpeed for MovementController<T> {
-    type Speed = T::Speed;
+    type Speed = <T as SetSpeed>::Speed;
 
     fn set_speed(&mut self, speed: Self::Speed) {
         self.atomic.set_speed(speed);
+    }
+}
+
+impl<T: MovementControlled> GetSpeed for MovementController<T> {
+    type Speed = <T as GetSpeed>::Speed;
+
+    fn get_speed(&mut self) -> Self::Speed {
+        self.atomic.get_speed()
     }
 }

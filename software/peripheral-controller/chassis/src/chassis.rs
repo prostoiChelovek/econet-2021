@@ -1,9 +1,9 @@
-use motor::SetSpeed;
+use motor::{SetSpeed, GetSpeed};
 use encoder::{GetPosition, Update};
 use servo::{SetPosition, CheckTargetReached};
 use gyro::GetRotation;
 
-pub trait ChassisMotor = SetSpeed + GetPosition + SetPosition + CheckTargetReached + Update;
+pub trait ChassisMotor = SetSpeed + GetSpeed + GetPosition + SetPosition + CheckTargetReached + Update;
 
 #[derive(Debug, Default)]
 pub struct ChassisSpeed {
@@ -130,6 +130,21 @@ where
 
     fn set_speed(&mut self, speed: Self::Speed) {
         self.speed = speed;
+    }
+}
+
+impl<L, R, G> GetSpeed for Chassis<L, R, G> 
+where
+    L: ChassisMotor,
+    R: ChassisMotor,
+    G: GetRotation,
+    <L as GetSpeed>::Speed: Into<f32>,
+    <R as GetSpeed>::Speed: Into<f32>
+{
+    type Speed = (f32, f32);
+
+    fn get_speed(&mut self) -> Self::Speed {
+        (self.left.get_speed().into(), self.right.get_speed().into())
     }
 }
 
