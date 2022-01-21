@@ -1,0 +1,10 @@
+[package]
+edition = "2021"
+name = "drawers_controller"
+version = "0.1.0"
+
+[dependencies]
+embedded-hal = { version = "0.2.6", features = ["unproven"] }
+
+motor = { path = "../motor" }
+

@@ -20,11 +20,14 @@ panic-rtt-target = { version = "0.1.2", features = ["cortex-m"] }
 panic-probe = { version = "0.2.0", features = ["print-rtt"] }
 fugit = "0.3.3"
 stm32f4xx-hal = { version = "0.11.1", features = ["rt", "stm32f401", "usb_fs", "rtic"] }
+shared-bus-rtic = { version = "0.2.2", features = ["thumbv6"] }
 
 cortex-m-rtic = "1.0.0"
 rtic-monotonic = { version = "1.0" }
 
 pid = "3.0.0"
+
+adxl343 = "0.8.0"
 
 motor = { path = "../motor" }
 dc_motor = { path = "../dc_motor" }
@@ -33,4 +36,6 @@ rotary_encoder = { path = "../rotary_encoder" }
 wheel = { path = "../wheel" }
 servo = { path = "../servo" }
 chassis = { path = "../chassis" }
+itg3205 = { path = "../itg3205" }
+drawers_controller = { path = "../drawers_controller" }
 
