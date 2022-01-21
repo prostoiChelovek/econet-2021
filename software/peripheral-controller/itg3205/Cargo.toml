@@ -8,3 +8,5 @@ embedded-hal = "0.2"
 
 micromath = "^1"
 
+gyro = { path = "../gyro" }
+

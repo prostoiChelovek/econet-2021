@@ -10,4 +10,5 @@ num-traits = { version = "0.2", default-features = false }
 motor = { path = "../motor" }
 encoder = { path = "../encoder" }
 servo = { path = "../servo" }
+gyro = { path = "../gyro" }
 

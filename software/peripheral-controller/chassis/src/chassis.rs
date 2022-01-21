@@ -1,6 +1,7 @@
 use motor::SetSpeed;
 use encoder::{GetPosition, Update};
 use servo::{SetPosition, CheckTargetReached};
+use gyro::GetRotation;
 
 pub trait ChassisMotor = SetSpeed + GetPosition + SetPosition + CheckTargetReached + Update;
 
@@ -31,10 +32,11 @@ struct ChassisMovement {
     pub prev_pos: (f32, f32),
 }
 
-pub struct Chassis<L, R>
+pub struct Chassis<L, R, G>
 where
     L: ChassisMotor,
-    R: ChassisMotor
+    R: ChassisMotor,
+    G: GetRotation
 {
     wheels_distance: f32,
 
@@ -45,16 +47,19 @@ where
 
     left: L,
     right: R,
+
+    rotation: G
 }
 
-impl<L, R> Chassis<L, R> 
+impl<L, R, G> Chassis<L, R, G> 
 where
     L: ChassisMotor,
     R: ChassisMotor,
+    G: GetRotation,
     f32: From<<L as GetPosition>::Position>,
     f32: From<<R as GetPosition>::Position>
 {
-    pub fn new(left: L, right: R, wheels_distance_cm: f32) -> Self {
+    pub fn new(left: L, right: R, rotation: G, wheels_distance_cm: f32) -> Self {
         Self {
             wheels_distance: wheels_distance_cm,
 
@@ -65,6 +70,8 @@ where
 
             left,
             right,
+
+            rotation
         }
     }
 
@@ -74,10 +81,11 @@ where
     }
 }
 
-impl<L, R> Update for Chassis<L, R> 
+impl<L, R, G> Update for Chassis<L, R, G> 
 where
     L: ChassisMotor,
     R: ChassisMotor,
+    G: GetRotation,
     f32: From<<L as GetPosition>::Position>,
     f32: From<<R as GetPosition>::Position>
 {
@@ -112,10 +120,11 @@ where
     }
 }
 
-impl<L, R> SetSpeed for Chassis<L, R> 
+impl<L, R, G> SetSpeed for Chassis<L, R, G> 
 where
     L: ChassisMotor,
     R: ChassisMotor,
+    G: GetRotation
 {
     type Speed = ChassisSpeed;
 
@@ -124,10 +133,11 @@ where
     }
 }
 
-impl<L, R> GetPosition for Chassis<L, R> 
+impl<L, R, G> GetPosition for Chassis<L, R, G> 
 where
     L: ChassisMotor,
     R: ChassisMotor,
+    G: GetRotation
 {
     type Position = ChassisPosition;
 
@@ -136,10 +146,11 @@ where
     }
 }
 
-impl<L, R> CheckTargetReached for Chassis<L, R> 
+impl<L, R, G> CheckTargetReached for Chassis<L, R, G> 
 where
     L: ChassisMotor,
     R: ChassisMotor,
+    G: GetRotation,
     f32: From<<L as GetPosition>::Position>,
     f32: From<<R as GetPosition>::Position>
 {
@@ -148,10 +159,11 @@ where
     }
 }
 
-impl<L, R> MoveAtomic for Chassis<L, R> 
+impl<L, R, G> MoveAtomic for Chassis<L, R, G> 
 where
     L: ChassisMotor,
     R: ChassisMotor,
+    G: GetRotation,
     f32: From<<L as GetPosition>::Position>,
     f32: From<<R as GetPosition>::Position>,
     <L as SetPosition>::Position: From<f32>,

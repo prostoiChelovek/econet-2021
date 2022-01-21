@@ -13,6 +13,8 @@ use hal::blocking::{i2c::{Write, WriteRead}, delay::DelayMs};
 
 use micromath::vector::{F32x3, I16x3};
 
+use gyro::GetRotation;
+
 pub const ADDRESS: u8 = 0x68;
 
 const LSB_DEG: f32 = 14.375; // TODO: figure out what is this
@@ -86,6 +88,18 @@ where
         let mut buffer = [0u8; 2];
         self.i2c.write_read(ADDRESS, &[register.addr()], &mut buffer)?;
         Ok(i16::from_be_bytes(buffer))
+    }
+}
+
+impl<I2C, E> GetRotation for Itg3205<I2C>
+where
+    I2C: WriteRead<Error = E> + Write<Error = E>,
+    E: Debug,
+{
+    // TOOD: this is kinda dumb
+    fn get_rotation(&mut self) -> f32 {
+        let g = self.read().unwrap();
+        g.y
     }
 }
 

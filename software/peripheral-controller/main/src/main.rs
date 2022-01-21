@@ -122,10 +122,10 @@ mod app {
         chassis: MovementController<
             Chassis<
                 Servo<left_wheel::MotorT, left_wheel::EncoderT>,
-                Servo<right_wheel::MotorT, right_wheel::EncoderT>
+                Servo<right_wheel::MotorT, right_wheel::EncoderT>,
+                gy85::GyroT
             >>,
         serial: SerialT,
-        gy85: gy85::Gy85
     }
 
     #[local]
@@ -178,7 +178,6 @@ mod app {
         let i2c = I2c::new(ctx.device.I2C1, (scl, sda), 400.khz(), &clocks);
         let bus = i2c_bus::create(i2c);
 
-        let mut accel = Adxl343::new(bus).unwrap();
         let mut gyro = Itg3205::new(bus).unwrap();
         gyro.calibrate(100, &mut delay);
 
@@ -230,7 +229,7 @@ mod app {
             })
         };
 
-        let chassis = Chassis::new(left_wheel, right_wheel, WHEELS_DISTANCE);
+        let chassis = Chassis::new(left_wheel, right_wheel, gyro, WHEELS_DISTANCE);
         let mut chassis = MovementController::new(chassis);
         chassis.set_speed(ChassisSpeed { linear: 45.0, angular: 60.0 } );
 
@@ -244,7 +243,6 @@ mod app {
             Shared {
                 serial,
                 chassis,
-                gy85: gy85::Gy85(accel, gyro)
             },
             Local {
                 x: 0.0, y: 0.0
