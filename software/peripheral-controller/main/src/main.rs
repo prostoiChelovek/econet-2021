@@ -100,7 +100,7 @@ mod app {
     mod drawers {
         use super::*;
 
-        type SetDirectionT = TwoPinSetDirection<PC9<OutPP>, PC8<OutPP>>;
+        type SetDirectionT = TwoPinSetDirection<PB13<OutPP>, PC8<OutPP>>;
         type EnablesT = (PC6<OutPP>, PC5<OutPP>, PA12<OutPP>);
         pub type DrawersT = Drawers<SetDirectionT, EnablesT>;
     }
