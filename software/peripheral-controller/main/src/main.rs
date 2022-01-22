@@ -40,20 +40,23 @@ mod app {
 
     use stm32f4xx_hal::{
         prelude::*,
-        pac, pac::{TIM1, TIM3, TIM5, USART2},
+        pac, pac::{TIM1, TIM3, TIM5, USART2, I2C1},
         gpio::{
-            gpioa::{PA0, PA1},
-            gpiob::{PB3, PB4, PB5, PB10, PB6},
-            gpioc::PC7,
-            Output, PushPull, Alternate
+            gpioa::{PA0, PA1, PA12},
+            gpiob::{PB3, PB4, PB5, PB10, PB6, PB8, PB9},
+            gpioc::{PC5, PC6, PC7, PC8, PC9},
+            Output, PushPull, Alternate, OpenDrain
         },
+        delay::Delay,
         timer::{monotonic::MonoTimer, Timer},
         pwm::{PwmChannel, C1, C2},
         qei::Qei,
-        serial, serial::Serial
+        serial, serial::Serial, i2c, i2c::I2c
     };
+    use shared_bus_rtic::SharedBus;
 
     use pid::Pid;
+    use adxl343::{Adxl343, accelerometer::Accelerometer};
 
     use motor::{Motor, SetSpeed};
     use dc_motor::{TwoPinSetDirection, PwmSetSpeed};
@@ -62,6 +65,8 @@ mod app {
     use wheel::Wheel;
     use servo::Servo;
     use chassis::{chassis::{Chassis, ChassisPosition, ChassisSpeed}, movement_controller::{MovementController, MoveRelative}};
+    use itg3205::Itg3205;
+    use drawers_controller::Drawers;
 
     type OutPP = Output<PushPull>;
 
@@ -70,6 +75,35 @@ mod app {
 
     wheel_alias!(left_wheel, PB10, PB3, TIM1, C1, PB4, PB5, TIM3, 2_u8);
     wheel_alias!(right_wheel, PC7, PB6, TIM1, C2, PA0, PA1, TIM5, 2_u8);
+
+    mod i2c_bus { 
+        use super::*;
+
+        type PinMode = Alternate<OpenDrain, 4_u8>;
+        pub type I2cT = I2c<I2C1, (PB8<PinMode>, PB9<PinMode>)>;
+        pub type BusT = SharedBus<I2cT>;
+
+        pub fn create(i2c: I2cT) -> BusT {
+            shared_bus_rtic::new!(i2c, I2cT)
+        }
+    }
+
+    mod gy85 {
+        use super::*;
+
+        pub type AccelerometerT = Adxl343<i2c_bus::BusT>;
+        pub type GyroT = Itg3205<i2c_bus::BusT>;
+
+        pub struct Gy85(pub AccelerometerT, pub GyroT);
+    }
+
+    mod drawers {
+        use super::*;
+
+        type SetDirectionT = TwoPinSetDirection<PB13<OutPP>, PC8<OutPP>>;
+        type EnablesT = (PC6<OutPP>, PC5<OutPP>, PA12<OutPP>);
+        pub type DrawersT = Drawers<SetDirectionT, EnablesT>;
+    }
 
     type SerialT = serial::Tx<USART2>;
 
@@ -90,7 +124,8 @@ mod app {
                 Servo<left_wheel::MotorT, left_wheel::EncoderT>,
                 Servo<right_wheel::MotorT, right_wheel::EncoderT>
             >>,
-        serial: SerialT
+        serial: SerialT,
+        gy85: gy85::Gy85
     }
 
     #[local]
@@ -126,7 +161,26 @@ mod app {
         let gpioc = ctx.device.GPIOC.split();
 
         let tx_pin = gpioa.pa2.into_alternate();
-        let serial = Serial::tx(ctx.device.USART2, tx_pin, 115200.bps(), &clocks).unwrap();
+        let mut serial = Serial::tx(ctx.device.USART2, tx_pin, 115200.bps(), &clocks).unwrap();
+
+        let mut delay = Delay::new(ctx.core.SYST, &clocks);
+
+        let scl = gpiob
+            .pb8
+            .into_alternate()
+            .internal_pull_up(true)
+            .set_open_drain();
+        let sda = gpiob
+            .pb9
+            .into_alternate()
+            .internal_pull_up(true)
+            .set_open_drain();
+        let i2c = I2c::new(ctx.device.I2C1, (scl, sda), 400.khz(), &clocks);
+        let bus = i2c_bus::create(i2c);
+
+        let mut accel = Adxl343::new(bus).unwrap();
+        let mut gyro = Itg3205::new(bus).unwrap();
+        gyro.calibrate(100, &mut delay);
 
         let (left_wheel, right_wheel) = {
             let en_pins = (gpioa.pa8.into_alternate(), gpioa.pa9.into_alternate());
@@ -189,7 +243,8 @@ mod app {
         (
             Shared {
                 serial,
-                chassis
+                chassis,
+                gy85: gy85::Gy85(accel, gyro)
             },
             Local {
                 x: 0.0, y: 0.0
